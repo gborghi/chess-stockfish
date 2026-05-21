@@ -1,0 +1,926 @@
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// CHESS PIECE SETS — themed silhouettes drawn from simple geometric primitives.
+// Ported from the Claude Design "Chess Wireframe" handoff (piece-sets.jsx).
+// Each fragment lives inside a 60×60 viewBox; @cutout / @line are tokens
+// replaced per piece color so cutouts read as features against the body fill.
+// ─────────────────────────────────────────────────────────────────────────────
+var SVG_PIECE_SETS = {
+  // ── FABLE — fairytale beasts (character-on-pedestal) ──────────────────────
+  fable: {
+    // Bear king — royal crown, round ears, snout, sash with medal
+    K: '<path d="M19 14 L21 4 L25 11 L30 3 L35 11 L39 4 L41 14 Z"/><circle cx="21" cy="4" r="1.3" fill="@cutout"/><circle cx="30" cy="3" r="1.6" fill="@cutout"/><circle cx="39" cy="4" r="1.3" fill="@cutout"/><rect x="19" y="13" width="22" height="2.5"/><ellipse cx="20" cy="17" rx="3" ry="3.5"/><ellipse cx="40" cy="17" rx="3" ry="3.5"/><ellipse cx="20" cy="18" rx="1.2" ry="1.8" fill="@cutout"/><ellipse cx="40" cy="18" rx="1.2" ry="1.8" fill="@cutout"/><path d="M19 17 Q15 25 19 32 Q25 34 30 33 Q35 34 41 32 Q45 25 41 17 Z"/><ellipse cx="30" cy="28" rx="4.5" ry="3" fill="@cutout"/><ellipse cx="30" cy="27" rx="1.2" ry="0.8"/><circle cx="25" cy="22" r="1.3" fill="@cutout"/><circle cx="35" cy="22" r="1.3" fill="@cutout"/><path d="M14 34 Q20 38 30 36 Q40 38 46 34 L46 47 L14 47 Z"/><rect x="14" y="40" width="32" height="1.5" fill="@cutout"/><circle cx="30" cy="43" r="2" fill="@cutout"/><circle cx="30" cy="43" r="0.8"/><path d="M12 47 L48 47 L50 52 L10 52 Z"/><rect x="8" y="52" width="44" height="5"/>',
+    // Fox queen — slim tiara w/ jewel, pointed ears, sly eyes, plumed tail
+    Q: '<path d="M22 13 L26 5 L30 11 L34 5 L38 13 Z"/><polygon points="29,5 30,1 31,5 32,3 31.4,6 30,7 28.6,6 28,3"/><circle cx="30" cy="3.5" r="0.8" fill="@cutout"/><circle cx="26" cy="7" r="0.9" fill="@cutout"/><circle cx="34" cy="7" r="0.9" fill="@cutout"/><polygon points="20,18 18,9 24,15"/><polygon points="40,18 42,9 36,15"/><polygon points="20.5,17 19.5,12 22.5,15.5" fill="@cutout"/><polygon points="39.5,17 40.5,12 37.5,15.5" fill="@cutout"/><path d="M22 16 Q19 22 23 30 L30 34 L37 30 Q41 22 38 16 Z"/><path d="M23 24 Q25 30 28 31 L30 28 Z" fill="@cutout"/><path d="M37 24 Q35 30 32 31 L30 28 Z" fill="@cutout"/><path d="M24 22 L27 21 L26.5 23.5 Z" fill="@cutout"/><path d="M36 22 L33 21 L33.5 23.5 Z" fill="@cutout"/><ellipse cx="30" cy="30" rx="1.2" ry="1" fill="@cutout"/><path d="M16 34 Q22 38 30 36 Q38 38 44 34 L46 47 L14 47 Z"/><path d="M44 36 Q53 34 52 25 Q49 31 46 31 Q49 34 44 38 Z"/><ellipse cx="50" cy="27" rx="1.6" ry="2.2" fill="@cutout"/><path d="M12 47 L48 47 L50 52 L10 52 Z"/><rect x="8" y="52" width="44" height="5"/>',
+    // Owl rook — tower battlements + big owl eyes
+    R: '<polygon points="14,12 14,6 18,6 18,10 22,10 22,4 26,4 26,10 30,10 30,4 34,4 34,10 38,10 38,4 42,4 42,10 46,10 46,6 46,12"/><path d="M14 12 L46 12 L46 30 Q40 36 30 36 Q20 36 14 30 Z"/><circle cx="22" cy="22" r="4.5" fill="@cutout"/><circle cx="38" cy="22" r="4.5" fill="@cutout"/><circle cx="22" cy="22" r="2.4"/><circle cx="38" cy="22" r="2.4"/><circle cx="22" cy="22" r="0.9" fill="@cutout"/><circle cx="38" cy="22" r="0.9" fill="@cutout"/><polygon points="28,28 32,28 30,33"/><polygon points="29,28.5 31,28.5 30,31" fill="@cutout"/><path d="M16 34 L44 34 L46 47 L14 47 Z"/><path d="M26 38 Q26 46 30 46 Q34 46 34 38 Z" fill="@cutout"/><path d="M27 40 Q29 42 27 44 M33 40 Q31 42 33 44" stroke="@line" stroke-width="0.7" fill="none"/><path d="M10 47 L50 47 L52 52 L8 52 Z"/><rect x="6" y="52" width="48" height="5"/>',
+    // Stag bishop — antlers, slim head, mitre cross
+    B: '<path d="M18 5 L20 13 M18 5 L14 11 M20 13 L24 14 M18 5 L17 2 M20 13 L21 9" stroke="@line" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M42 5 L40 13 M42 5 L46 11 M40 13 L36 14 M42 5 L43 2 M40 13 L39 9" stroke="@line" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M24 16 Q22 24 24 32 Q27 35 30 35 Q33 35 36 32 Q38 24 36 16 Z"/><path d="M28 18 L30 30 L32 18 Z" fill="@cutout"/><ellipse cx="27" cy="22" rx="1.2" ry="0.9" fill="@cutout"/><ellipse cx="33" cy="22" rx="1.2" ry="0.9" fill="@cutout"/><circle cx="28.5" cy="32.5" r="0.6" fill="@cutout"/><circle cx="31.5" cy="32.5" r="0.6" fill="@cutout"/><path d="M16 35 Q22 38 30 36 Q38 38 44 35 L46 47 L14 47 Z"/><rect x="29" y="38" width="2" height="7" fill="@cutout"/><rect x="26" y="40" width="8" height="2" fill="@cutout"/><path d="M12 47 L48 47 L50 52 L10 52 Z"/><rect x="8" y="52" width="44" height="5"/>',
+    // Hare knight — tall ears, helmet band, alert face
+    N: '<ellipse cx="22" cy="10" rx="2.8" ry="8" transform="rotate(-12 22 10)"/><ellipse cx="38" cy="10" rx="2.8" ry="8" transform="rotate(12 38 10)"/><ellipse cx="22" cy="11" rx="1.2" ry="5.5" transform="rotate(-12 22 11)" fill="@cutout"/><ellipse cx="38" cy="11" rx="1.2" ry="5.5" transform="rotate(12 38 11)" fill="@cutout"/><path d="M18 17 L42 17 L40 21 L20 21 Z" fill="@cutout"/><path d="M19 19 Q15 27 20 33 Q25 35 30 34 Q35 35 40 33 Q45 27 41 19 Z"/><circle cx="24" cy="24" r="1.4" fill="@cutout"/><circle cx="36" cy="24" r="1.4" fill="@cutout"/><circle cx="22" cy="30" r="0.5" fill="@cutout"/><circle cx="38" cy="30" r="0.5" fill="@cutout"/><circle cx="30" cy="30" r="1" fill="@cutout"/><path d="M28 30.5 L30 32.5 L32 30.5 M30 32.5 L30 34" stroke="@line" stroke-width="0.8" fill="none" stroke-linecap="round"/><path d="M16 35 Q22 38 30 36 Q38 38 44 35 L46 47 L14 47 Z"/><rect x="14" y="40" width="32" height="1.5" fill="@cutout"/><path d="M12 47 L48 47 L50 52 L10 52 Z"/><rect x="8" y="52" width="44" height="5"/>',
+    // Hedgehog pawn — spiky dome with snout poking right
+    P: '<path d="M12 42 L15 30 L17 38 L20 26 L23 38 L26 24 L30 36 L34 24 L37 38 L40 26 L43 38 L45 30 L48 42 Z"/><ellipse cx="30" cy="42" rx="14" ry="3" fill="@cutout"/><path d="M44 38 Q52 38 50 44 Q46 44 44 42 Z"/><circle cx="50" cy="40" r="0.9" fill="@cutout"/><circle cx="45" cy="36" r="0.9" fill="@cutout"/><circle cx="20" cy="46" r="2.2"/><circle cx="40" cy="46" r="2.2"/><circle cx="20" cy="46" r="0.6" fill="@cutout"/><circle cx="40" cy="46" r="0.6" fill="@cutout"/><rect x="10" y="48" width="40" height="3"/><path d="M8 51 L52 51 L50 56 L10 56 Z"/>'
+  },
+  // ── SCIFI — sleek mech / drone forms ──────────────────────────────────────
+  scifi: {
+    // Mech king — antenna crown, gear band, visor, reactor chest
+    K: '<line x1="22" y1="2" x2="22" y2="8" stroke="@line" stroke-width="1.4"/><circle cx="22" cy="1.8" r="1.1"/><line x1="30" y1="0" x2="30" y2="8" stroke="@line" stroke-width="1.4"/><circle cx="30" cy="0.5" r="1.4"/><line x1="38" y1="2" x2="38" y2="8" stroke="@line" stroke-width="1.4"/><circle cx="38" cy="1.8" r="1.1"/><rect x="18" y="8" width="24" height="4"/><rect x="19" y="9" width="2" height="2" fill="@cutout"/><rect x="23" y="9" width="2" height="2" fill="@cutout"/><rect x="27" y="9" width="2" height="2" fill="@cutout"/><rect x="31" y="9" width="2" height="2" fill="@cutout"/><rect x="35" y="9" width="2" height="2" fill="@cutout"/><rect x="39" y="9" width="2" height="2" fill="@cutout"/><rect x="20" y="12" width="20" height="14" rx="2"/><rect x="22" y="16" width="16" height="4" fill="@cutout"/><rect x="23" y="17" width="2" height="2"/><rect x="29" y="17" width="2" height="2"/><rect x="35" y="17" width="2" height="2"/><rect x="26" y="22" width="8" height="2" fill="@cutout"/><line x1="28" y1="22" x2="28" y2="24" stroke="@line" stroke-width="0.4"/><line x1="30" y1="22" x2="30" y2="24" stroke="@line" stroke-width="0.4"/><line x1="32" y1="22" x2="32" y2="24" stroke="@line" stroke-width="0.4"/><path d="M14 26 L46 26 L48 46 L12 46 Z"/><circle cx="17" cy="30" r="1" fill="@cutout"/><circle cx="43" cy="30" r="1" fill="@cutout"/><circle cx="30" cy="36" r="4" fill="@cutout"/><circle cx="30" cy="36" r="2.5"/><circle cx="30" cy="36" r="1" fill="@cutout"/><line x1="14" y1="34" x2="46" y2="34" stroke="@line" stroke-width="0.4"/><rect x="10" y="46" width="40" height="3"/><path d="M8 49 L52 49 L50 56 L10 56 Z"/>',
+    // Drone queen — quad rotors, sensor band, power core, landing struts
+    Q: '<line x1="6" y1="10" x2="22" y2="10" stroke="@line" stroke-width="1.4"/><line x1="38" y1="10" x2="54" y2="10" stroke="@line" stroke-width="1.4"/><ellipse cx="8" cy="10" rx="4" ry="1.4"/><ellipse cx="20" cy="10" rx="4" ry="1.4"/><ellipse cx="40" cy="10" rx="4" ry="1.4"/><ellipse cx="52" cy="10" rx="4" ry="1.4"/><polygon points="26,8 30,1 34,8"/><circle cx="30" cy="3.5" r="1" fill="@cutout"/><rect x="22" y="9" width="4" height="3"/><rect x="34" y="9" width="4" height="3"/><path d="M22 14 Q22 12 30 12 Q38 12 38 14 L40 30 L20 30 Z"/><rect x="22" y="18" width="16" height="3.5" fill="@cutout"/><rect x="23.5" y="19" width="2" height="1.5"/><rect x="27" y="19" width="2" height="1.5"/><rect x="31" y="19" width="2" height="1.5"/><rect x="34.5" y="19" width="2" height="1.5"/><path d="M20 30 L40 30 L42 44 L18 44 Z"/><circle cx="30" cy="37" r="3.2" fill="@cutout"/><polygon points="30,34 32.2,37 30,40 27.8,37"/><line x1="22" y1="44" x2="18" y2="50" stroke="@line" stroke-width="1.2"/><line x1="38" y1="44" x2="42" y2="50" stroke="@line" stroke-width="1.2"/><circle cx="18" cy="50" r="1.4"/><circle cx="42" cy="50" r="1.4"/><rect x="14" y="50" width="32" height="3"/><path d="M10 53 L50 53 L52 56 L8 56 Z"/>',
+    // Capsule rook — pointed top, portholes, fins, booster nozzles
+    R: '<line x1="30" y1="0" x2="30" y2="5" stroke="@line" stroke-width="1.2"/><circle cx="30" cy="0.5" r="0.9"/><path d="M22 12 Q22 4 30 2 Q38 4 38 12 Z"/><rect x="22" y="12" width="16" height="32"/><circle cx="30" cy="18" r="2.2" fill="@cutout"/><circle cx="30" cy="18" r="1.1"/><circle cx="30" cy="26" r="2.2" fill="@cutout"/><circle cx="30" cy="26" r="1.1"/><circle cx="30" cy="34" r="2.2" fill="@cutout"/><circle cx="30" cy="34" r="1.1"/><rect x="27" y="39" width="6" height="5" fill="@cutout"/><rect x="28" y="40" width="4" height="2"/><polygon points="22,30 14,46 22,46"/><polygon points="38,30 46,46 38,46"/><line x1="22" y1="38" x2="18" y2="46" stroke="@line" stroke-width="0.5"/><line x1="38" y1="38" x2="42" y2="46" stroke="@line" stroke-width="0.5"/><circle cx="20" cy="49" r="2.2" fill="@cutout"/><circle cx="40" cy="49" r="2.2" fill="@cutout"/><circle cx="30" cy="49" r="2.2" fill="@cutout"/><rect x="14" y="46" width="32" height="2"/><path d="M10 52 L50 52 L52 56 L8 56 Z"/>',
+    // Satellite bishop — dish, body w/ window grid, solar panels
+    B: '<line x1="30" y1="0" x2="30" y2="8" stroke="@line" stroke-width="1.2"/><path d="M22 8 Q30 0 38 8 L36 12 L24 12 Z"/><rect x="28" y="12" width="4" height="3"/><rect x="29" y="15" width="2" height="3"/><rect x="18" y="18" width="24" height="22" rx="2"/><rect x="22" y="22" width="16" height="4" fill="@cutout"/><rect x="23" y="23" width="2" height="2"/><rect x="27" y="23" width="2" height="2"/><rect x="31" y="23" width="2" height="2"/><rect x="35" y="23" width="2" height="2"/><rect x="22" y="30" width="16" height="2" fill="@cutout"/><rect x="22" y="34" width="16" height="2" fill="@cutout"/><rect x="6" y="22" width="12" height="12"/><line x1="9" y1="22" x2="9" y2="34" stroke="@line" stroke-width="0.4"/><line x1="12" y1="22" x2="12" y2="34" stroke="@line" stroke-width="0.4"/><line x1="15" y1="22" x2="15" y2="34" stroke="@line" stroke-width="0.4"/><line x1="6" y1="28" x2="18" y2="28" stroke="@line" stroke-width="0.4"/><rect x="42" y="22" width="12" height="12"/><line x1="45" y1="22" x2="45" y2="34" stroke="@line" stroke-width="0.4"/><line x1="48" y1="22" x2="48" y2="34" stroke="@line" stroke-width="0.4"/><line x1="51" y1="22" x2="51" y2="34" stroke="@line" stroke-width="0.4"/><line x1="42" y1="28" x2="54" y2="28" stroke="@line" stroke-width="0.4"/><rect x="16" y="26" width="4" height="3"/><rect x="40" y="26" width="4" height="3"/><polygon points="22,40 38,40 36,46 24,46"/><rect x="14" y="46" width="32" height="3"/><path d="M10 49 L50 49 L52 56 L8 56 Z"/>',
+    // Mech-knight bot — angular helmet, full visor, jaw grille
+    N: '<polygon points="18,16 20,4 26,8 30,4 34,8 40,4 42,16"/><polygon points="22,8 22,1 25,5 24,8"/><polygon points="38,8 38,1 35,5 36,8"/><rect x="20" y="12" width="20" height="6" fill="@cutout"/><rect x="22" y="13.5" width="4" height="3"/><rect x="34" y="13.5" width="4" height="3"/><rect x="28" y="13.5" width="4" height="3"/><rect x="22" y="18" width="16" height="6"/><line x1="22" y1="22" x2="38" y2="22" stroke="@line" stroke-width="0.4"/><rect x="25" y="20" width="2" height="2" fill="@cutout"/><rect x="29" y="20" width="2" height="2" fill="@cutout"/><rect x="33" y="20" width="2" height="2" fill="@cutout"/><path d="M16 26 L44 26 L46 44 L14 44 Z"/><rect x="11" y="26" width="9" height="6" rx="2"/><rect x="40" y="26" width="9" height="6" rx="2"/><circle cx="15" cy="29" r="0.8" fill="@cutout"/><circle cx="45" cy="29" r="0.8" fill="@cutout"/><rect x="46" y="32" width="6" height="3"/><polygon points="52,30 56,32 56,36 52,38"/><polygon points="22,32 38,32 36,40 24,40" fill="@cutout"/><circle cx="30" cy="36" r="1.5"/><rect x="10" y="44" width="40" height="3"/><path d="M8 47 L52 47 L50 56 L10 56 Z"/>',
+    // Probe pawn — small floating drone w/ visor & cargo box
+    P: '<line x1="30" y1="4" x2="30" y2="11" stroke="@line" stroke-width="1.2"/><circle cx="30" cy="4" r="1"/><circle cx="30" cy="20" r="8"/><rect x="23" y="18" width="14" height="4" fill="@cutout"/><rect x="25" y="19" width="3" height="2"/><rect x="32" y="19" width="3" height="2"/><rect x="14" y="20" width="6" height="3"/><polygon points="14,21 12,18 12,25 14,23"/><rect x="40" y="20" width="6" height="3"/><polygon points="46,21 48,18 48,25 46,23"/><ellipse cx="30" cy="30" rx="12" ry="3" fill="@cutout"/><ellipse cx="30" cy="30" rx="10" ry="2"/><rect x="24" y="34" width="12" height="10" rx="1"/><rect x="26" y="36" width="8" height="2" fill="@cutout"/><rect x="26" y="40" width="8" height="2" fill="@cutout"/><polygon points="22,46 18,50 22,50"/><polygon points="38,46 42,50 38,50"/><rect x="14" y="50" width="32" height="3"/><path d="M10 53 L50 53 L52 56 L8 56 Z"/>'
+  },
+  // ── ELVEN — tall, slim, pointed, ornate ───────────────────────────────────
+  elven: {
+    // High elf king — pointed crown w/ jewels, slim face, pointed ears, star brooch
+    K: '<path d="M19 15 L22 4 L25 11 L28 2 L30 10 L32 2 L35 11 L38 4 L41 15 Z"/><circle cx="22" cy="5" r="0.9" fill="@cutout"/><circle cx="28" cy="3" r="0.9" fill="@cutout"/><circle cx="32" cy="3" r="0.9" fill="@cutout"/><circle cx="38" cy="5" r="0.9" fill="@cutout"/><rect x="20" y="14" width="20" height="2"/><polygon points="20,22 16,15 22,18"/><polygon points="40,22 44,15 38,18"/><ellipse cx="30" cy="23" rx="5.5" ry="7"/><path d="M27 22 L29.5 21.2 L29.5 23.2 Z" fill="@cutout"/><path d="M33 22 L30.5 21.2 L30.5 23.2 Z" fill="@cutout"/><path d="M28 28 L32 28" stroke="@line" stroke-width="0.7" fill="none" stroke-linecap="round"/><path d="M18 30 Q22 34 30 32 Q38 34 42 30 L46 48 L14 48 Z"/><polygon points="30,36 31,38.5 33.5,38.5 31.5,40 32.2,42.5 30,41 27.8,42.5 28.5,40 26.5,38.5 29,38.5" fill="@cutout"/><path d="M24 32 L22 48 M36 32 L38 48" stroke="@line" stroke-width="0.5" fill="none"/><path d="M12 48 L48 48 L50 52 L10 52 Z"/><rect x="8" y="52" width="44" height="5"/>',
+    // Elven queen — starry tiara, almond eyes, flowing hair, embroidered dress
+    Q: '<path d="M20 14 L24 6 L30 11 L36 6 L40 14"/><polygon points="28,4 30,0 32,4 34,3 33,6 30,7 27,6 26,3"/><circle cx="30" cy="3" r="0.7" fill="@cutout"/><rect x="20" y="13" width="20" height="2"/><polygon points="20,22 17,15 22,18"/><polygon points="40,22 43,15 38,18"/><path d="M25 16 Q22 26 22 38 L18 40 Q19 24 25 16 Z"/><path d="M35 16 Q38 26 38 38 L42 40 Q41 24 35 16 Z"/><ellipse cx="30" cy="23" rx="5" ry="7"/><ellipse cx="27" cy="22" rx="1.1" ry="0.7" fill="@cutout"/><ellipse cx="33" cy="22" rx="1.1" ry="0.7" fill="@cutout"/><path d="M28 27 L30 28 L32 27" stroke="@line" stroke-width="0.6" fill="none" stroke-linecap="round"/><path d="M18 30 Q24 33 30 32 Q36 33 42 30 L48 48 L12 48 Z"/><circle cx="23" cy="40" r="1.4" fill="@cutout"/><circle cx="37" cy="40" r="1.4" fill="@cutout"/><circle cx="30" cy="43" r="1.5" fill="@cutout"/><path d="M10 48 L50 48 L52 52 L8 52 Z"/><rect x="6" y="52" width="48" height="5"/>',
+    // Elven spire — slender tower w/ banner, Gothic windows, arched door
+    R: '<polygon points="28,1 32,1 30,5"/><rect x="29.5" y="5" width="1" height="4"/><polygon points="30,5 39,7 30,9"/><polygon points="22,12 24,9 26,12"/><polygon points="28,12 30,9 32,12"/><polygon points="34,12 36,9 38,12"/><rect x="22" y="12" width="16" height="3"/><path d="M20 15 L40 15 L42 48 L18 48 Z"/><circle cx="30" cy="20" r="2.2" fill="@cutout"/><polygon points="30,18.3 30.6,20 30,21.7 29.4,20"/><path d="M24 24 L24 32 Q27 32 27 28 L27 24 Z" fill="@cutout"/><path d="M36 24 L36 32 Q33 32 33 28 L33 24 Z" fill="@cutout"/><path d="M27 38 L27 46 L33 46 L33 38 Q30 36.5 27 38 Z" fill="@cutout"/><path d="M20 22 L20 46 M40 22 L40 46" stroke="@line" stroke-width="0.5" fill="none"/><path d="M14 48 L46 48 L48 52 L12 52 Z"/><rect x="10" y="52" width="40" height="5"/>',
+    // Elven mage — pointed hat w/ star, long beard, runed robe, staff w/ orb
+    B: '<polygon points="25,16 30,1 35,16"/><polygon points="29.4,5 30,3 30.6,5 32,5.5 30.8,7 31.3,8.7 30,7.8 28.7,8.7 29.2,7 28,5.5"/><ellipse cx="30" cy="16" rx="7" ry="1.6"/><polygon points="22,22 19,17 24,20"/><polygon points="38,22 41,17 36,20"/><ellipse cx="30" cy="23" rx="4.5" ry="6"/><path d="M26 22 L28 22 M32 22 L34 22" stroke="@line" stroke-width="0.7" fill="none" stroke-linecap="round"/><path d="M26 27 Q30 38 34 27 Q33 32 30 35 Q27 32 26 27 Z" fill="@cutout"/><path d="M18 32 L42 32 L44 48 L16 48 Z"/><polygon points="30,37 31,39 33,39 31.5,40.5 32,42.5 30,41.3 28,42.5 28.5,40.5 27,39 29,39" fill="@cutout"/><line x1="50" y1="14" x2="50" y2="50" stroke="@line" stroke-width="1.4"/><circle cx="50" cy="12" r="2.5" fill="@cutout"/><circle cx="50" cy="12" r="1"/><path d="M14 48 L46 48 L48 52 L12 52 Z"/><rect x="10" y="52" width="40" height="5"/>',
+    // Elven steed — slim noble horse, flowing mane, bridle decoration
+    N: '<path d="M22 12 L32 14 Q42 14 44 22 L44 32 Q42 36 36 36 L30 36 L26 32 L22 28 L20 22 Z"/><path d="M14 16 Q12 26 14 36 Q18 30 18 22 Q20 18 22 16 Z"/><polygon points="30,12 32,5 34,12"/><polygon points="34,12 36,6 38,12"/><circle cx="36" cy="22" r="1.4" fill="@cutout"/><circle cx="36" cy="22" r="0.6"/><path d="M38 24 L44 24 M40 28 L44 28" stroke="@line" stroke-width="0.7" fill="none" stroke-linecap="round"/><polygon points="34,30 35,28 37,30 36,32" fill="@cutout"/><ellipse cx="42" cy="30" rx="0.8" ry="0.5" fill="@cutout"/><path d="M42 32 L46 33" stroke="@line" stroke-width="0.7" fill="none" stroke-linecap="round"/><path d="M16 36 Q22 38 30 37 Q40 38 46 36 L48 48 L14 48 Z"/><path d="M12 48 L48 48 L50 52 L10 52 Z"/><rect x="8" y="52" width="44" height="5"/>',
+    // Hooded archer pawn — pointed hood, hidden face, bow on back, quiver
+    P: '<polygon points="22,18 30,4 38,18"/><polygon points="24,18 30,7 36,18" fill="@cutout"/><ellipse cx="30" cy="14" rx="4" ry="3"/><circle cx="28.3" cy="14" r="0.6" fill="@cutout"/><circle cx="31.7" cy="14" r="0.6" fill="@cutout"/><path d="M20 18 L40 18 L42 22 L42 46 L18 46 L18 22 Z"/><path d="M44 18 Q49 32 44 46" stroke="@line" stroke-width="1.5" fill="none"/><line x1="44" y1="18" x2="44" y2="46" stroke="@line" stroke-width="0.6"/><polygon points="46,16 48.5,14 48.5,20"/><polygon points="46.5,16 47.7,15 47.7,19" fill="@cutout"/><path d="M30 22 L30 46" stroke="@line" stroke-width="0.5" fill="none"/><rect x="20" y="32" width="20" height="1.5" fill="@cutout"/><circle cx="30" cy="32.8" r="1" fill="@cutout"/><path d="M14 46 L46 46 L48 51 L12 51 Z"/><rect x="10" y="51" width="40" height="5"/>'
+  },
+  // ── ORCISH — stocky, brutal, tusked, spiked ───────────────────────────────
+  orcish: {
+    // Orc warlord — spiked iron crown, brow, tusks, skull chestplate, shoulder spikes
+    K: '<polygon points="16,14 16,5 19,9 22,3 24,9 27,5 29,10 30,2 31,10 33,5 36,9 38,3 41,9 44,5 44,14"/><rect x="16" y="13" width="28" height="2"/><path d="M20 16 Q18 28 22 32 L30 35 L38 32 Q42 28 40 16 Z"/><rect x="22" y="19" width="16" height="2" fill="@cutout"/><polygon points="25,23 28,21 28,24" fill="@cutout"/><polygon points="35,23 32,21 32,24" fill="@cutout"/><polygon points="29,25 31,25 30,29"/><path d="M25 28 L22 36 L26 32 Z"/><path d="M35 28 L38 36 L34 32 Z"/><path d="M26 31 L34 31 L32 33 L28 33 Z" fill="@cutout"/><path d="M12 35 Q18 38 30 36 Q42 38 48 35 L48 48 L12 48 Z"/><circle cx="30" cy="42" r="3.2" fill="@cutout"/><polygon points="28,42 32,42 30,45.5"/><circle cx="28.6" cy="41" r="0.6"/><circle cx="31.4" cy="41" r="0.6"/><polygon points="14,35 11,29 16,33"/><polygon points="46,35 49,29 44,33"/><path d="M10 48 L50 48 L52 52 L8 52 Z"/><rect x="6" y="52" width="48" height="5"/>',
+    // Orc shamaness — bone horns, wild hair, tribal paint, bone necklace
+    Q: '<path d="M18 14 Q14 8 12 4 Q18 6 20 12 Z"/><path d="M42 14 Q46 8 48 4 Q42 6 40 12 Z"/><polygon points="20,14 22,6 26,12 30,4 34,12 38,6 40,14"/><circle cx="26" cy="9" r="0.7" fill="@cutout"/><circle cx="30" cy="7" r="0.8" fill="@cutout"/><circle cx="34" cy="9" r="0.7" fill="@cutout"/><path d="M20 14 Q15 22 18 32 Q22 24 22 18"/><path d="M40 14 Q45 22 42 32 Q38 24 38 18"/><ellipse cx="30" cy="22" rx="7" ry="7"/><rect x="22" y="20" width="16" height="1.5" fill="@cutout"/><circle cx="27" cy="23" r="1.2" fill="@cutout"/><circle cx="33" cy="23" r="1.2" fill="@cutout"/><path d="M26 28 L24 33 L28 31 Z"/><path d="M34 28 L36 33 L32 31 Z"/><path d="M14 34 Q20 38 30 36 Q40 38 46 34 L46 48 L14 48 Z"/><path d="M22 37 Q30 41 38 37" stroke="@line" stroke-width="0.6" fill="none"/><circle cx="24" cy="38" r="0.8"/><circle cx="27" cy="39.4" r="0.8"/><circle cx="30" cy="40" r="0.9"/><circle cx="33" cy="39.4" r="0.8"/><circle cx="36" cy="38" r="0.8"/><path d="M12 48 L48 48 L50 52 L10 52 Z"/><rect x="8" y="52" width="44" height="5"/>',
+    // Brutalist fortress rook — spike battlements, iron portcullis, skull above door
+    R: '<polygon points="13,12 15,4 17,12"/><polygon points="20,12 22,2 24,12"/><polygon points="28,12 30,0 32,12"/><polygon points="36,12 38,2 40,12"/><polygon points="43,12 45,4 47,12"/><rect x="12" y="10" width="36" height="6"/><rect x="10" y="16" width="40" height="32"/><rect x="14" y="22" width="4" height="6" fill="@cutout"/><rect x="22" y="22" width="4" height="6" fill="@cutout"/><rect x="34" y="22" width="4" height="6" fill="@cutout"/><rect x="42" y="22" width="4" height="6" fill="@cutout"/><circle cx="30" cy="20" r="2.8"/><circle cx="28.7" cy="19.7" r="0.7" fill="@cutout"/><circle cx="31.3" cy="19.7" r="0.7" fill="@cutout"/><polygon points="29,21 31,21 30,22.5" fill="@cutout"/><rect x="22" y="34" width="16" height="14" fill="@cutout"/><polygon points="22,34 30,30 38,34"/><path d="M22 38 L38 38 M22 42 L38 42 M22 46 L38 46 M26 34 L26 48 M30 34 L30 48 M34 34 L34 48" stroke="@line" stroke-width="0.5"/><path d="M14 28 L19 31 M46 28 L41 31" stroke="@line" stroke-width="0.6"/><path d="M8 48 L52 48 L54 52 L6 52 Z"/><rect x="4" y="52" width="52" height="5"/>',
+    // Orc shaman — bone skull mask, teeth, tusks, skull-staff
+    B: '<polygon points="22,18 30,2 38,18 36,22 24,22"/><polygon points="25,11 28,10 28,15 25,15" fill="@cutout"/><polygon points="35,11 32,10 32,15 35,15" fill="@cutout"/><polygon points="29,14 31,14 30,17" fill="@cutout"/><rect x="26" y="19" width="8" height="2"/><rect x="27" y="19" width="1" height="2" fill="@cutout"/><rect x="29" y="19" width="1" height="2" fill="@cutout"/><rect x="31" y="19" width="1" height="2" fill="@cutout"/><rect x="33" y="19" width="1" height="2" fill="@cutout"/><path d="M26 22 L23 30 L27 26 Z"/><path d="M34 22 L37 30 L33 26 Z"/><path d="M14 24 Q18 22 22 24 L38 24 Q42 22 46 24 L46 48 L14 48 Z"/><path d="M16 24 Q22 22 30 23 Q38 22 44 24 L44 28 Q30 26 16 28 Z" fill="@cutout"/><line x1="50" y1="16" x2="50" y2="50" stroke="@line" stroke-width="1.6"/><circle cx="50" cy="14" r="2.8"/><circle cx="48.9" cy="13.5" r="0.6" fill="@cutout"/><circle cx="51.1" cy="13.5" r="0.6" fill="@cutout"/><polygon points="49,15 51,15 50,16.6" fill="@cutout"/><circle cx="50" cy="20" r="0.7"/><circle cx="50" cy="23" r="0.7"/><path d="M12 48 L48 48 L50 52 L10 52 Z"/><rect x="8" y="52" width="44" height="5"/>',
+    // War boar — broad-headed boar w/ tusks, bristles, armor plate
+    N: '<path d="M10 30 Q8 22 14 18 L22 16 Q28 16 32 22 L38 24 Q40 28 38 34 L34 38 L24 38 L14 36 Z"/><polygon points="14,18 12,11 18,16"/><rect x="7" y="26" width="7" height="6"/><circle cx="9" cy="28" r="0.6" fill="@cutout"/><circle cx="9" cy="31" r="0.6" fill="@cutout"/><path d="M10 30 L4 25 L8 32 Z"/><path d="M14 32 L20 30 L16 34 Z"/><polygon points="22,22 26,20 24,24" fill="@cutout"/><polygon points="20,16 18,8 22,12"/><polygon points="24,15 24,7 28,12"/><polygon points="30,18 32,8 34,14"/><rect x="26" y="30" width="12" height="3" fill="@cutout"/><path d="M16 38 Q22 40 30 38 Q40 38 46 40 L48 48 L14 48 Z"/><polygon points="42,46 46,42 44,48"/><path d="M10 48 L50 48 L52 52 L8 52 Z"/><rect x="6" y="52" width="48" height="5"/>',
+    // Orc grunt pawn — horned helmet, eye slit, tusks, X-strap belt
+    P: '<path d="M22 14 L22 20 L38 20 L38 14 Q30 8 22 14 Z"/><polygon points="28,14 30,3 32,14"/><polygon points="29,14 30,7 31,14" fill="@cutout"/><rect x="22" y="20" width="16" height="1.5" fill="@cutout"/><rect x="24" y="22" width="12" height="2" fill="@cutout"/><circle cx="27" cy="23" r="0.6"/><circle cx="33" cy="23" r="0.6"/><path d="M26 26 L24 32 L28 30 Z"/><path d="M34 26 L36 32 L32 30 Z"/><path d="M26 26 Q30 31 34 26 Q32 29 30 29 Q28 29 26 26 Z"/><path d="M14 34 Q18 30 22 32 L38 32 Q42 30 46 34 L46 48 L14 48 Z"/><path d="M20 36 L40 44 M40 36 L20 44" stroke="@line" stroke-width="0.9" fill="none"/><path d="M12 48 L48 48 L50 52 L10 52 Z"/><rect x="8" y="52" width="44" height="5"/>'
+  }
+};
+
+// Build a data: URL for a themed SVG piece. `pieceCode` is the chessboard.js
+// 2-char id, e.g. 'wK', 'bP'.
+function buildSvgPiece(setId, pieceCode) {
+  var set = SVG_PIECE_SETS[setId];
+  if (!set) return '';
+  var color = pieceCode.charAt(0);              // 'w' or 'b'
+  var type  = pieceCode.charAt(1).toUpperCase();// K Q R B N P
+  var fragment = set[type];
+  if (!fragment) return '';
+  var isWhite = (color === 'w');
+  var fill    = isWhite ? '#f6e9c1' : '#1e1a14';
+  var stroke  = '#1e1a14';
+  var cutout  = isWhite ? '#1e1a14' : '#f6e9c1'; // contrast against body fill
+  var lineCol = '#1e1a14';                       // stroke-only line work
+  var sw      = isWhite ? '1.1' : '0.6';
+  var body = fragment
+    .replace(/@cutout/g, cutout)
+    .replace(/@line/g,   lineCol);
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"' +
+            ' fill="' + fill + '" stroke="' + stroke +
+            '" stroke-width="' + sw + '" stroke-linejoin="round">' +
+            body + '</svg>';
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+// Resolve the URL for a chessboard.js piece code given a theme that may be
+// either a `{piece}`-template string OR a function (the SVG sets).
+function resolvePieceUrl(theme, pieceCode) {
+  if (typeof theme === 'function') return theme(pieceCode);
+  if (typeof theme === 'string' && theme.indexOf('{piece}') !== -1) {
+    return theme.replace('{piece}', pieceCode);
+  }
+  return pieceThemes['cburnett'].replace('{piece}', pieceCode);
+}
+
+var isMobile = ('ontouchstart' in window) && window.innerWidth < 768;
+var selectedSquare = null;
+var board = null;
+var game = new Chess();
+var stockfish = null;
+var stockfishReady = false;
+var computerPlaysWhite = false;
+var computerPlaysBlack = true;
+var boardOrientation = 'white';
+var humanColor = 'w';
+var strengthLevel = 10;
+var strengthLevelBlack = 10;
+var skillLevel = 10;
+var skillLevelBlack = 10;
+var currentSeed = 0;
+var whiteCaptured = [];
+var blackCaptured = [];
+var currentScore = 0;
+var setupBoard = null;
+var isSetupMode = false;
+var isPaused = true;
+var pausedFen = '';
+var pausedTurn = 'w';
+var timeoutId = null;
+
+// ── REPLAY / HISTORY ──
+var moveHistory = [];      // Array di SAN moves
+var fenHistory = [''];     // FEN dopo ogni mossa (index 0 = posizione iniziale)
+var viewIndex = 0;         // Posizione corrente nel navigatore
+var isReplaying = false;   // True se stiamo navigando (non alla fine)
+var startFen = 'startpos'; // FEN iniziale (per partite da setup)
+
+var pieceThemes = {
+  'cburnett':    'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/{piece}.svg',
+  'chessnut':    'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/chessnut/{piece}.svg',
+  'companion':   'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/companion/{piece}.svg',
+  'dubrovny':    'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/dubrovny/{piece}.svg',
+  'fantasy':     'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/fantasy/{piece}.svg',
+  'fresca':      'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/fresca/{piece}.svg',
+  'gioco':       'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/gioco/{piece}.svg',
+  'governor':    'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/governor/{piece}.svg',
+  'horsey':      'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/horsey/{piece}.svg',
+  'icpieces':    'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/icpieces/{piece}.svg',
+  'kosal':       'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/kosal/{piece}.svg',
+  'leipzig':     'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/leipzig/{piece}.svg',
+  'letter':      'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/letter/{piece}.svg',
+  'maestro':     'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/maestro/{piece}.svg',
+  'merida':      'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/merida/{piece}.svg',
+  'mpchess':     'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/mpchess/{piece}.svg',
+  'pirouetti':   'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/pirouetti/{piece}.svg',
+  'reillycraig': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/reillycraig/{piece}.svg',
+  'shapes':      'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/shapes/{piece}.svg',
+  'spatial':     'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/spatial/{piece}.svg',
+  'tatiana':     'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/tatiana/{piece}.svg',
+  // ── Claude Design themed SVG sets — generated client-side ───────────────
+  'fable':       function(piece) { return buildSvgPiece('fable',  piece); },
+  'scifi':       function(piece) { return buildSvgPiece('scifi',  piece); },
+  'elven':       function(piece) { return buildSvgPiece('elven',  piece); },
+  'orcish':      function(piece) { return buildSvgPiece('orcish', piece); }
+};
+var currentPieceTheme = pieceThemes['cburnett'];
+
+var boardThemes = {
+  'classic':   { light: '#f0d9b5', dark: '#b58863' },
+  'green':     { light: '#eeeed2', dark: '#769656' },
+  'blue':      { light: '#dee3e6', dark: '#8ca2ad' },
+  'purple':    { light: '#e8d6f5', dark: '#8b5bbd' },
+  'coral':     { light: '#f7d6c8', dark: '#c9614a' },
+  'midnight':  { light: '#6b7f99', dark: '#2c3e55' },
+  'newspaper': { light: '#f0ece4', dark: '#706b5e' },
+  'walnut':    { light: '#e3c690', dark: '#6b4a2b' },
+  // ── Claude Design medieval palettes ─────────────────────────────────────
+  'stone':     { light: '#c8c0ac', dark: '#5a584f' },
+  'slate':     { light: '#b8b4a8', dark: '#3a3a44' },
+  'bone':      { light: '#f0e5cc', dark: '#8b7d63' },
+  'iron':      { light: '#a89770', dark: '#2a2620' },
+  'gules':     { light: '#e8d2a3', dark: '#5a1818' },
+};
+
+function applyBoardTheme(themeName) {
+  var t = boardThemes[themeName] || boardThemes['classic'];
+  var style = document.getElementById('boardThemeStyle');
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'boardThemeStyle';
+    document.head.appendChild(style);
+  }
+  style.textContent =
+    '.white-1e1d7 { background-color: ' + t.light + ' !important; }' +
+    '.black-3c85d { background-color: ' + t.dark  + ' !important; }';
+}
+
+function updateStatus(text, alertType) {
+  alertType = alertType || 'info';
+  $('#status')
+    .removeClass('alert-info alert-danger alert-success alert-warning')
+    .addClass('alert-' + alertType)
+    .text(text);
+}
+
+function removeAllHighlights() {
+  $('#myBoard .square-55d63').removeClass('highlight-white highlight-black highlight-selected highlight-legal threatened-piece unprotected-piece');
+}
+
+function replaceFenSquare(fenBoard, square, newPiece) {
+  var boardArray = fenBoard.split('/');
+  var rowIndex = 8 - parseInt(square[1]);
+  var colIndex = square.charCodeAt(0) - 97;
+  var cells = [];
+  var rowStr = boardArray[rowIndex];
+  for (var i = 0; i < rowStr.length; i++) {
+    if (/\d/.test(rowStr[i])) {
+      for (var k = 0; k < parseInt(rowStr[i]); k++) cells.push('.');
+    } else {
+      cells.push(rowStr[i]);
+    }
+  }
+  cells[colIndex] = newPiece !== null ? newPiece : '.';
+  var newRow = '', count = 0;
+  for (var j = 0; j < cells.length; j++) {
+    if (cells[j] === '.') { count++; }
+    else { if (count > 0) { newRow += count; count = 0; } newRow += cells[j]; }
+  }
+  if (count > 0) newRow += count;
+  boardArray[rowIndex] = newRow;
+  return boardArray.join('/');
+}
+
+function getAttackers(targetSquare, attackerColor, isFriendly) {
+  var fenParts = game.fen().split(' ');
+  fenParts[1] = attackerColor;
+  fenParts[3] = '-';
+  if (isFriendly) {
+    var dummyPiece = attackerColor === 'w' ? 'p' : 'P';
+    fenParts[0] = replaceFenSquare(fenParts[0], targetSquare, dummyPiece);
+  }
+  var attackers = [];
+  try {
+    var tempGame = new Chess(fenParts.join(' '));
+    tempGame.moves({verbose: true}).forEach(function(m) {
+      if (m.to === targetSquare) attackers.push(m.from);
+    });
+  } catch(e) { console.warn('getAttackers error:', e); }
+  return attackers;
+}
+
+function highlightThreatsAndUnprotected() {
+  removeAllHighlights();
+  if (computerPlaysWhite && computerPlaysBlack) return;
+  if (!computerPlaysWhite && !computerPlaysBlack) return;
+  if (game.turn() !== humanColor) return;
+  var squares = [];
+  for (var row = 0; row < 8; row++) {
+    for (var col = 0; col < 8; col++) {
+      var square = String.fromCharCode(97 + col) + (8 - row);
+      var piece = game.get(square);
+      if (piece && piece.color === humanColor) squares.push(square);
+    }
+  }
+  var enemyColor = humanColor === 'w' ? 'b' : 'w';
+  squares.forEach(function(square) {
+    var enemyAttackers = getAttackers(square, enemyColor, false);
+    var friendlyProtectors = getAttackers(square, humanColor, true);
+    if (enemyAttackers.length > 0) {
+      $('#myBoard .square-' + square).addClass('threatened-piece');
+    }
+    if (friendlyProtectors.length === 0 && enemyAttackers.length > 0) {
+      $('#myBoard .square-' + square).addClass('unprotected-piece');
+    }
+  });
+}
+
+function updateCapturedPieces() {
+  var theme = currentPieceTheme;
+  var whiteHtml = '';
+  whiteCaptured.forEach(function(p) {
+    var url = resolvePieceUrl(theme, 'w' + p.toUpperCase());
+    whiteHtml += '<img src="' + url + '" style="width:40px;height:40px;" title="' + p + '">';
+  });
+  $('#whiteCaptured').html('<h6 class="text-muted">Catturati dal Nero</h6>' + whiteHtml);
+  $('#whiteCapturedRight').html('<h6 class="text-muted">Catturati dal Nero</h6>' + whiteHtml);
+  var blackHtml = '';
+  blackCaptured.forEach(function(p) {
+    var url = resolvePieceUrl(theme, 'b' + p.toUpperCase());
+    blackHtml += '<img src="' + url + '" style="width:40px;height:40px;" title="' + p + '">';
+  });
+  $('#blackCaptured').html('<h6 class="text-muted">Catturati dal Bianco</h6>' + blackHtml);
+  $('#blackCapturedRight').html('<h6 class="text-muted">Catturati dal Bianco</h6>' + blackHtml);
+}
+
+function updateAdvantageBar(score) {
+  currentScore = score;
+  if (game.game_over() || game.in_draw()) {
+    $('#advantageBarBlack, #advantageBarBlackRight').css('height', '50%');
+    $('#advantageBarWhite, #advantageBarWhiteRight').css('height', '50%');
+    $('#scoreText, #scoreTextRight').text('Patta');
+    return;
+  }
+  var winProb = 1 / (1 + Math.exp(-0.0035 * score));
+  var whiteHeight = winProb * 100;
+  $('#advantageBarWhite, #advantageBarWhiteRight').css('height', whiteHeight + '%');
+  $('#advantageBarBlack, #advantageBarBlackRight').css('height', (100 - whiteHeight) + '%');
+  $('#scoreText, #scoreTextRight').text(score + ' cp (' + Math.round(winProb * 100) + '% ♔)');
+}
+
+function updateGameResult() {
+  if (game.in_checkmate()) {
+    var winner = game.turn() === 'w' ? 'Nero' : 'Bianco';
+    $('#gameResult, #gameResultRight').text('Scaccomatto! ' + winner + ' vince')
+      .removeClass().addClass('text-danger fw-bold');
+  } else if (game.in_draw()) {
+    $('#gameResult, #gameResultRight').text('Patta')
+      .removeClass().addClass('text-muted fw-bold');
+    updateAdvantageBar(0);
+  } else {
+    $('#gameResult, #gameResultRight').text('');
+  }
+}
+
+// ── MOVE HISTORY ──
+
+function recordMove(san) {
+  // Se eravamo indietro nel replay, tronca la storia da qui
+  if (viewIndex < moveHistory.length) {
+    moveHistory = moveHistory.slice(0, viewIndex);
+    fenHistory = fenHistory.slice(0, viewIndex + 1);
+  }
+  moveHistory.push(san);
+  fenHistory.push(game.fen());
+  viewIndex = moveHistory.length;
+  isReplaying = false;
+  updateMoveList();
+}
+
+function updateMoveList() {
+  var html = '';
+  for (var i = 0; i < moveHistory.length; i++) {
+    var moveNum = Math.floor(i / 2) + 1;
+    var isWhite = (i % 2 === 0);
+    if (isWhite) html += '<span class="move-num">' + moveNum + '.</span> ';
+    var activeClass = (i + 1 === viewIndex) ? ' move-active' : '';
+    html += '<span class="move-san' + activeClass + '" data-idx="' + (i + 1) + '">' + moveHistory[i] + '</span> ';
+  }
+  $('#moveList').html(html);
+  $('#moveCounter').text(viewIndex + ' / ' + moveHistory.length);
+  // Auto-scroll in fondo
+  var el = document.getElementById('moveList');
+  if (el) el.scrollTop = el.scrollHeight;
+}
+
+function goToMove(idx) {
+  if (idx < 0) idx = 0;
+  if (idx > moveHistory.length) idx = moveHistory.length;
+  viewIndex = idx;
+  isReplaying = (idx < moveHistory.length);
+
+  // Carica il FEN corrispondente
+  var fen = fenHistory[idx];
+  board.position(fen);
+  removeAllHighlights();
+  updateMoveList();
+
+  // Se siamo all'ultima mossa, sincronizza game con la posizione reale
+  if (!isReplaying) {
+    game.load(fen);
+  }
+}
+
+// ── STOCKFISH ──
+
+function initStockfish() {
+  updateStatus('Caricamento Stockfish...', 'info');
+  var stockfishUrl = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
+  fetch(stockfishUrl)
+    .then(function(r) {
+      if (!r.ok) throw new Error('Fetch fallito: ' + r.status);
+      return r.text();
+    })
+    .then(function(script) {
+      var blob = new Blob([script], {type: 'application/javascript'});
+      var url = URL.createObjectURL(blob);
+      stockfish = new Worker(url);
+      stockfish.onmessage = function(e) {
+        var line = e.data.trim();
+        console.log('Stockfish:', line);
+        if (line.includes('uciok') || line.includes('readyok')) {
+          stockfishReady = true;
+          updateStatus('Stockfish pronto!', 'success');
+        }
+        if (line.includes('score cp')) {
+          var match = line.match(/score cp (\-?\d+)/);
+          if (match) {
+            var score = parseInt(match[1]);
+            if (game.turn() === 'b') score = -score;
+            updateAdvantageBar(score);
+          }
+        }
+        if (line.startsWith('bestmove')) {
+          var match = line.match(/bestmove\s+(\S+)/);
+          if (match) {
+            var uci = match[1];
+            var move = game.move(uci, {sloppy: true});
+            if (move) {
+              recordMove(move.san);
+              board.position(game.fen());
+              updateGameResult();
+              removeAllHighlights();
+              var hlClass = move.color === 'w' ? 'highlight-white' : 'highlight-black';
+              $('#myBoard .square-' + move.from).addClass(hlClass);
+              $('#myBoard .square-' + move.to).addClass(hlClass);
+              highlightThreatsAndUnprotected();
+              updateStatus('Computer ha mosso: ' + move.san, 'success');
+              if (move.captured) {
+                if (move.color === 'w') blackCaptured.push(move.captured);
+                else whiteCaptured.push(move.captured);
+                updateCapturedPieces();
+              }
+              if (game.game_over()) {
+                updateStatus(game.in_checkmate() ? 'Scaccomatto!' : 'Partita finita.', 'danger');
+              } else if (computerPlaysWhite && computerPlaysBlack && !isPaused) {
+                timeoutId = setTimeout(makeComputerMove, 800);
+              }
+            }
+          }
+        }
+      };
+      stockfish.onerror = function(err) { console.error('Worker error:', err); };
+      stockfish.postMessage('uci');
+      stockfish.postMessage('isready');
+    })
+    .catch(function(err) { updateStatus('Errore caricamento Stockfish', 'danger'); });
+}
+
+function onDragStart(source, piece) {
+  if (isReplaying) return false;
+  if (game.game_over()) return false;
+  var turn = game.turn();
+  if ((turn === 'w' && computerPlaysWhite) || (turn === 'b' && computerPlaysBlack)) return false;
+  if (computerPlaysWhite && computerPlaysBlack) return false;
+  if ((turn === 'w' && piece.search(/^b/) !== -1) || (turn === 'b' && piece.search(/^w/) !== -1)) return false;
+  return true;
+}
+
+function onDrop(source, target) {
+  var move = game.move({from: source, to: target, promotion: 'q'});
+  if (move === null) return 'snapback';
+  recordMove(move.san);
+  removeAllHighlights();
+  var hlClass = move.color === 'w' ? 'highlight-white' : 'highlight-black';
+  $('#myBoard .square-' + source).addClass(hlClass);
+  $('#myBoard .square-' + target).addClass(hlClass);
+  board.position(game.fen());
+  highlightThreatsAndUnprotected();
+  updateStatus('Tocca al computer...', 'info');
+  if (move.captured) {
+    if (move.color === 'w') blackCaptured.push(move.captured);
+    else whiteCaptured.push(move.captured);
+    updateCapturedPieces();
+  }
+  updateGameResult();
+  timeoutId = setTimeout(makeComputerMove, 600);
+}
+
+function onSquareTap(square) {
+  if (isReplaying) return;
+  var piece = game.get(square);
+  var turn = game.turn();
+  if (selectedSquare) {
+    if (selectedSquare === square) {
+      selectedSquare = null;
+      removeAllHighlights();
+      highlightThreatsAndUnprotected();
+      return;
+    }
+    var move = game.move({ from: selectedSquare, to: square, promotion: 'q' });
+    if (move !== null) {
+      recordMove(move.san);
+      selectedSquare = null;
+      removeAllHighlights();
+      var hlClass = move.color === 'w' ? 'highlight-white' : 'highlight-black';
+      $('#myBoard .square-' + move.from).addClass(hlClass);
+      $('#myBoard .square-' + move.to).addClass(hlClass);
+      board.position(game.fen());
+      highlightThreatsAndUnprotected();
+      updateGameResult();
+      if (move.captured) {
+        if (move.color === 'w') blackCaptured.push(move.captured);
+        else whiteCaptured.push(move.captured);
+        updateCapturedPieces();
+      }
+      updateStatus('Tocca al computer...', 'info');
+      timeoutId = setTimeout(makeComputerMove, 600);
+      return;
+    }
+    if (piece && piece.color === humanColor) {
+      selectedSquare = square;
+      highlightSelectedAndMoves(square);
+      return;
+    }
+    selectedSquare = null;
+    removeAllHighlights();
+    highlightThreatsAndUnprotected();
+    return;
+  }
+  if (!piece || piece.color !== humanColor) return;
+  if ((turn === 'w' && computerPlaysWhite) || (turn === 'b' && computerPlaysBlack)) return;
+  if (game.game_over()) return;
+  selectedSquare = square;
+  highlightSelectedAndMoves(square);
+}
+
+function highlightSelectedAndMoves(square) {
+  removeAllHighlights();
+  $('#myBoard .square-' + square).addClass('highlight-selected');
+  var moves = game.moves({ square: square, verbose: true });
+  moves.forEach(function(m) {
+    $('#myBoard .square-' + m.to).addClass('highlight-legal');
+  });
+}
+
+function makeComputerMove() {
+  var turn = game.turn();
+  if (game.game_over() || isPaused || isReplaying) return;
+  if (!((turn === 'w' && computerPlaysWhite) || (turn === 'b' && computerPlaysBlack))) return;
+  if (!stockfishReady) {
+    timeoutId = setTimeout(makeComputerMove, 1200);
+    return;
+  }
+  updateStatus('Stockfish sta pensando...', 'warning');
+  var depth, skill;
+  if ((turn === 'w' && computerPlaysWhite) || (turn === 'b' && !computerPlaysWhite)) {
+    depth = strengthLevel;
+    skill = skillLevel;
+  } else {
+    depth = strengthLevelBlack;
+    skill = skillLevelBlack;
+  }
+  if (depth == 0) {
+    var moves = game.moves({verbose: true});
+    if (moves.length > 0) {
+      var randomMove = moves[Math.floor(Math.random() * moves.length)];
+      game.move(randomMove);
+      recordMove(randomMove.san || randomMove);
+      board.position(game.fen());
+      removeAllHighlights();
+      $('#myBoard .square-' + randomMove.from).addClass('highlight-black');
+      $('#myBoard .square-' + randomMove.to).addClass('highlight-black');
+      updateStatus('Mossa random (depth 0)', 'warning');
+      if (computerPlaysWhite && computerPlaysBlack && !isPaused) {
+        timeoutId = setTimeout(makeComputerMove, 400);
+      }
+      return;
+    }
+  }
+  stockfish.postMessage('position fen ' + game.fen());
+  stockfish.postMessage('setoption name Skill Level value ' + skill);
+  stockfish.postMessage('go depth ' + depth);
+}
+
+function resetGame() {
+  game.reset();
+  board.position('start');
+  isPaused = true;
+  isReplaying = false;
+  moveHistory = [];
+  fenHistory = [game.fen()];
+  viewIndex = 0;
+  startFen = 'startpos';
+  updateMoveList();
+  $('#pauseRestartButton').removeClass('d-none').text('Start');
+  removeAllHighlights();
+  whiteCaptured = [];
+  blackCaptured = [];
+  updateCapturedPieces();
+  updateAdvantageBar(0);
+  updateStatus('Nuova partita!', 'success');
+  humanColor = computerPlaysWhite ? 'b' : 'w';
+  if (stockfishReady && (computerPlaysWhite || computerPlaysBlack)) {
+    stockfish.postMessage('ucinewgame');
+  }
+  updateGameResult();
+}
+
+function initBoard() {
+  board = Chessboard('myBoard', {
+    draggable: !isMobile,
+    position: 'start',
+    pieceTheme: currentPieceTheme,
+    showNotation: true,
+    onDragStart: onDragStart,
+    onDrop: onDrop,
+    onSnapEnd: function() { board.position(game.fen()); },
+    orientation: boardOrientation
+  });
+  if (isMobile) {
+    $('#myBoard').on('click', '.square-55d63', function() {
+      if (isPaused || game.game_over()) return;
+      var classes = $(this).attr('class') || '';
+      var match = classes.match(/square-([a-h][1-8])/);
+      if (match) onSquareTap(match[1]);
+    });
+  }
+}
+
+function handleModeChange(mode) {
+  computerPlaysWhite = mode === 'white' || mode === 'both';
+  computerPlaysBlack = mode === 'black' || mode === 'both';
+  boardOrientation = mode === 'white' ? 'black' : 'white';
+  humanColor = computerPlaysWhite ? 'b' : 'w';
+  if (board) board.orientation(boardOrientation);
+}
+
+// ── SAVE / LOAD / DELETE ──
+
+function getGameResult() {
+  if (game.in_checkmate()) {
+    return game.turn() === 'w' ? '0-1' : '1-0';
+  }
+  if (game.in_draw()) return '1/2-1/2';
+  return '*';
+}
+
+function saveCurrentGame() {
+  var name = prompt('Nome della partita:', 'Partita ' + new Date().toLocaleString('it'));
+  if (!name) return;
+
+  var pgn = game.pgn();
+  var result = getGameResult();
+
+  updateStatus('Salvataggio...', 'warning');
+  google.script.run
+    .withSuccessHandler(function(res) {
+      updateStatus(res.message, 'success');
+    })
+    .withFailureHandler(function(err) {
+      updateStatus('Errore: ' + err.message, 'danger');
+    })
+    .saveGame(name, pgn, result, startFen);
+}
+
+function loadGameList() {
+  var container = $('#gameListContainer');
+  container.toggleClass('d-none');
+  if (container.hasClass('d-none')) return;
+
+  $('#gameListSpinner').removeClass('d-none');
+  $('#gameList').empty();
+
+  google.script.run
+    .withSuccessHandler(function(games) {
+      $('#gameListSpinner').addClass('d-none');
+      if (!games || games.length === 0) {
+        $('#gameList').html('<div class="text-muted small">Nessuna partita salvata.</div>');
+        return;
+      }
+      var html = '';
+      games.forEach(function(g) {
+        html += '<div class="game-item" data-id="' + g.id + '">';
+        html += '<div class="game-item-info">';
+        html += '<strong class="small">' + g.name + '</strong>';
+        html += '<span class="text-muted" style="font-size:10px">' + g.date + ' · ' + g.result + '</span>';
+        html += '</div>';
+        html += '<div class="game-item-actions">';
+        html += '<button class="btn btn-sm btn-outline-primary load-game-btn" title="Carica">▶</button>';
+        html += '<button class="btn btn-sm btn-outline-danger delete-game-btn" title="Elimina">✕</button>';
+        html += '</div>';
+        html += '</div>';
+      });
+      $('#gameList').html(html);
+    })
+    .withFailureHandler(function(err) {
+      $('#gameListSpinner').addClass('d-none');
+      $('#gameList').html('<div class="text-danger small">Errore: ' + err.message + '</div>');
+    })
+    .listGames();
+}
+
+function loadGameById(id) {
+  updateStatus('Caricamento partita...', 'warning');
+  google.script.run
+    .withSuccessHandler(function(g) {
+      if (!g) {
+        updateStatus('Partita non trovata.', 'danger');
+        return;
+      }
+
+      // Reset
+      game = new Chess();
+      if (g.startFen && g.startFen !== 'startpos') {
+        game.load(g.startFen);
+      }
+      startFen = g.startFen || 'startpos';
+
+      // Carica PGN
+      if (g.pgn) {
+        game.load_pgn(g.pgn);
+      }
+
+      // Ricostruisci la storia mosse/FEN
+      var tempGame = new Chess();
+      if (g.startFen && g.startFen !== 'startpos') {
+        tempGame.load(g.startFen);
+      }
+      fenHistory = [tempGame.fen()];
+      moveHistory = [];
+
+      var history = game.history();
+      history.forEach(function(san) {
+        tempGame.move(san);
+        moveHistory.push(san);
+        fenHistory.push(tempGame.fen());
+      });
+
+      viewIndex = moveHistory.length;
+      isReplaying = false;
+      isPaused = true;
+
+      board.position(game.fen());
+      board.orientation(boardOrientation);
+
+      whiteCaptured = [];
+      blackCaptured = [];
+      updateCapturedPieces();
+      updateAdvantageBar(0);
+      updateMoveList();
+      updateGameResult();
+      $('#pauseRestartButton').text('Start');
+      updateStatus('Partita caricata: ' + g.name, 'success');
+      $('#gameListContainer').addClass('d-none');
+    })
+    .withFailureHandler(function(err) {
+      updateStatus('Errore: ' + err.message, 'danger');
+    })
+    .loadGame(id);
+}
+
+function deleteGameById(id) {
+  if (!confirm('Eliminare questa partita?')) return;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      updateStatus(res.message, res.success ? 'success' : 'danger');
+      if (res.success) loadGameList(); // Ricarica lista
+    })
+    .withFailureHandler(function(err) {
+      updateStatus('Errore: ' + err.message, 'danger');
+    })
+    .deleteGame(id);
+}
+
+// ── INIT ──
+
+$(document).ready(function() {
+  updateStatus('Inizializzazione...', 'info');
+  initStockfish();
+  initBoard();
+  fenHistory = [game.fen()];
+  updateMoveList();
+
+  $('#boardThemeSelect').on('change', function() { applyBoardTheme($(this).val()); });
+  applyBoardTheme('classic');
+
+  $('#pieceThemeSelect').on('change', function() {
+    currentPieceTheme = pieceThemes[$(this).val()] || pieceThemes['cburnett'];
+    board = Chessboard('myBoard', {
+      draggable: true,
+      position: game.fen(),
+      pieceTheme: currentPieceTheme,
+      showNotation: true,
+      onDragStart: onDragStart,
+      onDrop: onDrop,
+      onSnapEnd: function() { board.position(game.fen()); },
+      orientation: boardOrientation
+    });
+    highlightThreatsAndUnprotected();
+    updateCapturedPieces();
+  });
+
+  $('#setupButton').click(function() {
+    isSetupMode = true;
+    $('#myBoard').addClass('d-none');
+    $('#setupContainer').removeClass('d-none');
+    updateStatus('Modalità setup – trascina i pezzi', 'warning');
+    setTimeout(function() {
+      setupBoard = Chessboard('setupBoard', {
+        draggable: true,
+        dropOffBoard: 'trash',
+        sparePieces: true,
+        position: game.fen(),
+        pieceTheme: currentPieceTheme,
+        onDrop: function() { return true; }
+      });
+      setupBoard.resize();
+    }, 50);
+  });
+
+  $('#applySetup').click(function() {
+    var positionObj = setupBoard.position();
+    game.clear();
+    for (var square in positionObj) {
+      if (positionObj.hasOwnProperty(square)) {
+        var pieceStr = positionObj[square];
+        if (pieceStr && pieceStr.length === 2) {
+          game.put({type: pieceStr[1].toLowerCase(), color: pieceStr[0]}, square);
+        }
+      }
+    }
+    var newFen = game.fen();
+    game.load(newFen);
+    startFen = newFen;
+    fenHistory = [newFen];
+    moveHistory = [];
+    viewIndex = 0;
+    updateMoveList();
+    board.position(newFen);
+    board.orientation(boardOrientation);
+    $('#setupContainer').addClass('d-none');
+    $('#myBoard').removeClass('d-none');
+    isSetupMode = false;
+    updateStatus('Posizione applicata!', 'success');
+    setupBoard.destroy();
+    setupBoard = null;
+    timeoutId = setTimeout(makeComputerMove, 400);
+  });
+
+  $('#cancelSetup').click(function() {
+    $('#setupContainer').addClass('d-none');
+    $('#myBoard').removeClass('d-none');
+    isSetupMode = false;
+    updateStatus('Setup annullato.', 'warning');
+    setupBoard.destroy();
+    setupBoard = null;
+  });
+
+  $('#playerMode').change(function() {
+    var mode = $(this).val();
+    handleModeChange(mode);
+    isPaused = true;
+    $('#pauseRestartButton').removeClass('d-none').text('Start');
+    if (mode === 'both') {
+      $('#secondStrengthContainer').removeClass('d-none');
+    } else {
+      $('#secondStrengthContainer').addClass('d-none');
+    }
+  });
+
+  $('#pauseRestartButton').click(function() {
+    // Se in replay, torna alla fine prima
+    if (isReplaying) {
+      goToMove(moveHistory.length);
+      game.load(fenHistory[moveHistory.length]);
+    }
+    if (isPaused) {
+      isPaused = false;
+      $('#pauseRestartButton').text('Pause');
+      updateStatus('Partita ripresa!', 'success');
+      timeoutId = setTimeout(makeComputerMove, 400);
+    } else {
+      isPaused = true;
+      if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+      updateStatus('Partita in pausa.', 'warning');
+      $('#pauseRestartButton').text('Start');
+    }
+  });
+
+  $('#strengthSlider').on('input', function() {
+    strengthLevel = parseInt($(this).val());
+    $('#strengthValue').text(strengthLevel);
+  });
+  $('#strengthSliderBlack').on('input', function() {
+    strengthLevelBlack = parseInt($(this).val());
+    $('#strengthValueBlack').text(strengthLevelBlack);
+  });
+  $('#skillSlider').on('input', function() {
+    skillLevel = parseInt($(this).val());
+    $('#skillValue').text(skillLevel);
+  });
+  $('#skillSliderBlack').on('input', function() {
+    skillLevelBlack = parseInt($(this).val());
+    $('#skillValueBlack').text(skillLevelBlack);
+  });
+  $('#seedInput').on('input', function() {
+    currentSeed = parseInt($(this).val()) || 0;
+  });
+  $('#randomSeedButton').click(function() {
+    currentSeed = Math.floor(Math.random() * 100000) + 1;
+    $('#seedInput').val(currentSeed);
+  });
+  $('#resetButton').click(function() {
+    handleModeChange($('#playerMode').val());
+    resetGame();
+  });
+
+  // ── NAVIGATORE MOSSE ──
+  $('#moveFirst').click(function() { goToMove(0); });
+  $('#movePrev').click(function()  { goToMove(viewIndex - 1); });
+  $('#moveNext').click(function()  { goToMove(viewIndex + 1); });
+  $('#moveLast').click(function()  { goToMove(moveHistory.length); });
+
+  // Click su singola mossa nella lista
+  $('#moveList').on('click', '.move-san', function() {
+    var idx = parseInt($(this).data('idx'));
+    goToMove(idx);
+  });
+
+  // ── SAVE / LOAD ──
+  $('#saveGameBtn').click(saveCurrentGame);
+  $('#loadListBtn').click(loadGameList);
+
+  // Deleghe click per carica / elimina
+  $('#gameList').on('click', '.load-game-btn', function() {
+    var id = $(this).closest('.game-item').data('id');
+    loadGameById(id);
+  });
+  $('#gameList').on('click', '.delete-game-btn', function() {
+    var id = $(this).closest('.game-item').data('id');
+    deleteGameById(id);
+  });
+
+  handleModeChange('black');
+});
+</script>

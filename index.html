@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <?!= include('Style'); ?>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css">
+  </head>
+  <body>
+    <div class="app-wrapper">
+
+      <!-- SIDEBAR CONTROLLI -->
+      <div class="sidebar">
+        <h5 class="sidebar-title">Scacchi vs. Stockfysshe</h5>
+
+        <div class="ctrl-group">
+          <label class="ctrl-label">Modalità</label>
+          <select id="playerMode" class="form-select form-select-sm">
+            <option value="none">Umano vs Umano</option>
+            <option value="black" selected>Computer Nero</option>
+            <option value="white">Computer Bianco</option>
+            <option value="both">Entrambi computer</option>
+          </select>
+          <div class="d-flex gap-2 mt-2">
+            <button id="resetButton" class="btn btn-primary btn-sm flex-fill">↺ Nuova</button>
+            <button id="pauseRestartButton" class="btn btn-warning btn-sm flex-fill">Start</button>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <label class="ctrl-label">Stockfish Bianco</label>
+          <div class="slider-row">
+            <span class="slider-lbl">Depth</span>
+            <input type="range" class="form-range" id="strengthSlider" min="0" max="30" value="10" step="1">
+            <span class="badge bg-primary" id="strengthValue">10</span>
+          </div>
+          <div class="slider-row">
+            <span class="slider-lbl">Skill</span>
+            <input type="range" class="form-range" id="skillSlider" min="0" max="20" value="10" step="1">
+            <span class="badge bg-primary" id="skillValue">10</span>
+          </div>
+        </div>
+
+        <div id="secondStrengthContainer" class="ctrl-group d-none">
+          <label class="ctrl-label">Stockfish Nero</label>
+          <div class="slider-row">
+            <span class="slider-lbl">Depth</span>
+            <input type="range" class="form-range" id="strengthSliderBlack" min="0" max="30" value="10" step="1">
+            <span class="badge bg-primary" id="strengthValueBlack">10</span>
+          </div>
+          <div class="slider-row">
+            <span class="slider-lbl">Skill</span>
+            <input type="range" class="form-range" id="skillSliderBlack" min="0" max="20" value="10" step="1">
+            <span class="badge bg-primary" id="skillValueBlack">10</span>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <label class="ctrl-label">Pezzi</label>
+          <select id="pieceThemeSelect" class="form-select form-select-sm">
+            <option value="cburnett" selected>Cburnett</option>
+            <option value="chessnut">Chessnut</option>
+            <option value="companion">Companion</option>
+            <option value="dubrovny">Dubrovny</option>
+            <option value="fantasy">Fantasy</option>
+            <option value="fresca">Fresca</option>
+            <option value="gioco">Gioco</option>
+            <option value="governor">Governor</option>
+            <option value="horsey">Horsey</option>
+            <option value="icpieces">ICpieces</option>
+            <option value="kosal">Kosal</option>
+            <option value="leipzig">Leipzig</option>
+            <option value="letter">Letter</option>
+            <option value="maestro">Maestro</option>
+            <option value="merida">Merida</option>
+            <option value="mpchess">MPchess</option>
+            <option value="pirouetti">Pirouetti</option>
+            <option value="reillycraig">Reillycraig</option>
+            <option value="shapes">Shapes</option>
+            <option value="spatial">Spatial</option>
+            <option value="tatiana">Tatiana</option>
+            <option disabled>──────────</option>
+            <option value="fable">✦ Fable (animali)</option>
+            <option value="scifi">✦ Sci-fi (macchine)</option>
+            <option value="elven">✦ Elven (elfi)</option>
+            <option value="orcish">✦ Orcish (orchi)</option>
+          </select>
+          <label class="ctrl-label mt-2">Scacchiera</label>
+          <select id="boardThemeSelect" class="form-select form-select-sm">
+            <option value="classic" selected>Classic</option>
+            <option value="green">Green</option>
+            <option value="blue">Blue</option>
+            <option value="purple">Purple</option>
+            <option value="coral">Coral</option>
+            <option value="midnight">Midnight</option>
+            <option value="newspaper">Newspaper</option>
+            <option value="walnut">Walnut</option>
+            <option disabled>──────────</option>
+            <option value="stone">Stone</option>
+            <option value="slate">Slate</option>
+            <option value="bone">Bone &amp; oak</option>
+            <option value="iron">Iron</option>
+            <option value="gules">Gules &amp; ivory</option>
+          </select>
+        </div>
+
+        <div class="ctrl-group">
+          <label class="ctrl-label">Seed</label>
+          <div class="input-group input-group-sm">
+            <button class="btn btn-outline-secondary btn-sm" id="randomSeedButton">Casuale</button>
+            <input type="number" class="form-control form-control-sm" id="seedInput" value="0" min="0">
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <button id="setupButton" class="btn btn-warning btn-sm w-100">⚙ Setup manuale</button>
+        </div>
+
+        <!-- Salva / Carica -->
+        <div class="ctrl-group">
+          <label class="ctrl-label">Partite</label>
+          <div class="d-flex gap-2 mb-2">
+            <button id="saveGameBtn" class="btn btn-success btn-sm flex-fill">💾 Salva</button>
+            <button id="loadListBtn" class="btn btn-info btn-sm flex-fill">📂 Carica</button>
+          </div>
+          <!-- Lista partite (nascosta) -->
+          <div id="gameListContainer" class="d-none">
+            <div id="gameListSpinner" class="text-center text-muted small d-none">Caricamento...</div>
+            <div id="gameList" class="game-list"></div>
+          </div>
+        </div>
+
+        <!-- Navigatore mosse -->
+        <div class="ctrl-group">
+          <label class="ctrl-label">Mosse</label>
+          <div id="moveList" class="move-list"></div>
+          <div class="d-flex gap-1 mt-2 justify-content-center">
+            <button id="moveFirst" class="btn btn-outline-secondary btn-sm">⏮</button>
+            <button id="movePrev" class="btn btn-outline-secondary btn-sm">◀</button>
+            <button id="moveNext" class="btn btn-outline-secondary btn-sm">▶</button>
+            <button id="moveLast" class="btn btn-outline-secondary btn-sm">⏭</button>
+          </div>
+          <small id="moveCounter" class="text-muted d-block text-center mt-1">0 / 0</small>
+        </div>
+
+        <div id="status" class="alert alert-info py-2 px-3 mb-0 small" role="alert">
+          Caricamento...
+        </div>
+
+        <!-- Barra vantaggio + catturati (solo mobile) -->
+        <div class="ctrl-group mb-0 d-md-none">
+          <label class="ctrl-label">Vantaggio</label>
+          <div class="advantage-bar-container">
+            <div id="advantageBarWhite" style="width:50%"></div>
+            <div id="advantageBarBlack" style="width:50%"></div>
+          </div>
+          <small id="scoreText" class="text-muted d-block text-center mt-1">0 cp</small>
+          <strong id="gameResult" class="d-block text-center text-danger mt-1 small"></strong>
+        </div>
+
+        <div class="ctrl-group mb-0 d-md-none">
+          <label class="ctrl-label">Catturati dal Bianco</label>
+          <div id="blackCaptured" class="captured-row"></div>
+          <label class="ctrl-label mt-2">Catturati dal Nero</label>
+          <div id="whiteCaptured" class="captured-row"></div>
+        </div>
+      </div>
+
+      <!-- AREA SCACCHIERA -->
+      <div class="board-area">
+        <div class="board-and-right">
+
+          <div id="setupContainer" class="d-none">
+            <h6>Editor posizione</h6>
+            <div id="setupBoard" class="setup-board-wrapper"></div>
+            <div class="mt-2 d-flex gap-2 justify-content-center">
+              <button id="applySetup" class="btn btn-success btn-sm">Applica</button>
+              <button id="cancelSetup" class="btn btn-secondary btn-sm">Annulla</button>
+            </div>
+          </div>
+
+          <div id="myBoard"></div>
+
+          <div class="right-panel d-none d-md-flex">
+            <div class="ctrl-group w-100">
+              <label class="ctrl-label">Vantaggio</label>
+              <div class="advantage-bar-container-vertical">
+                <div id="advantageBarBlackRight"></div>
+                <div id="advantageBarWhiteRight"></div>
+              </div>
+              <small id="scoreTextRight" class="text-muted d-block text-center mt-1">0 cp</small>
+              <strong id="gameResultRight" class="d-block text-center text-danger mt-1 small"></strong>
+            </div>
+
+            <div class="ctrl-group w-100">
+              <label class="ctrl-label">Catturati dal Bianco</label>
+              <div id="blackCapturedRight" class="captured-row"></div>
+              <label class="ctrl-label mt-2">Catturati dal Nero</label>
+              <div id="whiteCapturedRight" class="captured-row"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <div id="capturedMobile" class="d-md-none mt-2 text-center">
+          <div id="blackCapturedMobile" class="captured-row justify-content-center"></div>
+          <div id="whiteCapturedMobile" class="captured-row justify-content-center"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <?!= include('JavaScript'); ?>
+  </body>
+</html>

@@ -1,0 +1,444 @@
+================================================================================
+GROK / AURORA — CHESS PIECE GENERATION PROMPTS
+48 prompts total: 4 themed sets × 6 piece types × 2 colors (light/dark)
+================================================================================
+
+HOW TO USE
+----------
+Carica questo file su Grok come allegato e poi, per ogni pezzo, scrivi:
+    "Genera l'immagine del prompt FILE: fable/wK.png"
+Oppure copia-incolla il singolo blocco di prompt (tutto il testo tra le due
+righe ─── ) e mandalo a Grok come messaggio singolo.
+
+Genera UN PEZZO PER VOLTA per massimizzare qualità e consistenza.
+Risoluzione richiesta: 1024×1024.
+
+NAMING — IMPORTANTE
+-------------------
+Quando Grok ti restituisce l'immagine, salvala ESATTAMENTE con il nome scritto
+nel campo "FILE:" del blocco. Esempio: il primo prompt qui sotto va salvato
+come  pieces/fable/wK.png  dentro la cartella del progetto chess.
+
+Per le 48 immagini complessive le sottocartelle sono:
+    pieces/fable/    pieces/scifi/    pieces/elven/    pieces/orcish/
+
+I file dentro ognuna sono:
+    wK.png  wQ.png  wR.png  wB.png  wN.png  wP.png   (varianti chiare)
+    bK.png  bQ.png  bR.png  bB.png  bN.png  bP.png   (varianti scure)
+
+TROUBLESHOOTING
+---------------
+- Se Grok ignora "transparent background" e ti dà un fondo colorato, passa il
+  PNG da https://remove.bg o usa `rembg` da terminale prima di salvarlo.
+- Se i pezzi di uno stesso set escono con stili divergenti, rigenera con seed
+  fisso (se Grok lo permette) o ripeti più volte finché non sono coerenti.
+- Tieni la stessa "style header" parola per parola tra tutti e 6 i pezzi di
+  un set — è il fattore numero 1 per la consistenza visiva.
+
+================================================================================
+                                  TEMA 1 — FABLE
+                          (animali da fiaba in legno dipinto)
+================================================================================
+
+──────────────────────────────────────────────────────────────────────
+FILE: fable/wK.png   —   Bear King (light)
+──────────────────────────────────────────────────────────────────────
+Whimsical children's storybook illustration, painted-wood folk-art style, soft gouache brushwork with subtle watercolor washes, warm earth tones, gentle cozy fairytale atmosphere, hand-illustrated charm.
+Subject: a regal bear-king standing on a chess pedestal, wearing a tall jeweled royal crown with three large gems, a flowing ermine cloak fastened with a golden medallion at the chest, kind majestic expression with gentle bear muzzle.
+Material: sculpted from pale honey-cream painted wood with natural grain showing through, warm amber highlights, soft gold-leaf accents on jewelry and trim.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fable/bK.png   —   Bear King (dark)
+──────────────────────────────────────────────────────────────────────
+Whimsical children's storybook illustration, painted-wood folk-art style, soft gouache brushwork with subtle watercolor washes, warm earth tones, gentle cozy fairytale atmosphere, hand-illustrated charm.
+Subject: a regal bear-king standing on a chess pedestal, wearing a tall jeweled royal crown with three large gems, a flowing ermine cloak fastened with a golden medallion at the chest, kind majestic expression with gentle bear muzzle.
+Material: sculpted from deep walnut-stained wood with charcoal patina, mahogany shadows, antique-bronze accents on jewelry and trim.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fable/wQ.png   —   Fox Queen (light)
+──────────────────────────────────────────────────────────────────────
+Whimsical children's storybook illustration, painted-wood folk-art style, soft gouache brushwork with subtle watercolor washes, warm earth tones, gentle cozy fairytale atmosphere, hand-illustrated charm.
+Subject: an elegant fox-queen standing on a chess pedestal, wearing a delicate silver tiara crowned with a star, a flowing emerald cape, her bushy tail curling forward around her feet, slanted knowing eyes and a sly smile.
+Material: sculpted from pale honey-cream painted wood with natural grain showing through, warm amber highlights, soft gold-leaf accents on jewelry and trim.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fable/bQ.png   —   Fox Queen (dark)
+──────────────────────────────────────────────────────────────────────
+Whimsical children's storybook illustration, painted-wood folk-art style, soft gouache brushwork with subtle watercolor washes, warm earth tones, gentle cozy fairytale atmosphere, hand-illustrated charm.
+Subject: an elegant fox-queen standing on a chess pedestal, wearing a delicate silver tiara crowned with a star, a flowing emerald cape, her bushy tail curling forward around her feet, slanted knowing eyes and a sly smile.
+Material: sculpted from deep walnut-stained wood with charcoal patina, mahogany shadows, antique-bronze accents on jewelry and trim.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fable/wR.png   —   Owl Rook (light)
+──────────────────────────────────────────────────────────────────────
+Whimsical children's storybook illustration, painted-wood folk-art style, soft gouache brushwork with subtle watercolor washes, warm earth tones, gentle cozy fairytale atmosphere, hand-illustrated charm.
+Subject: a wise great-horned owl perched as a tower, large round amber eyes facing forward, fluffy feathered chest forming the tower body, small stone castle battlements crowning the head like a helmet, stately and serene.
+Material: sculpted from pale honey-cream painted wood with natural grain showing through, warm amber highlights, soft gold-leaf accents on jewelry and trim.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fable/bR.png   —   Owl Rook (dark)
+──────────────────────────────────────────────────────────────────────
+Whimsical children's storybook illustration, painted-wood folk-art style, soft gouache brushwork with subtle watercolor washes, warm earth tones, gentle cozy fairytale atmosphere, hand-illustrated charm.
+Subject: a wise great-horned owl perched as a tower, large round amber eyes facing forward, fluffy feathered chest forming the tower body, small stone castle battlements crowning the head like a helmet, stately and serene.
+Material: sculpted from deep walnut-stained wood with charcoal patina, mahogany shadows, antique-bronze accents on jewelry and trim.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fable/wB.png   —   Stag Bishop (light)
+──────────────────────────────────────────────────────────────────────
+Whimsical children's storybook illustration, painted-wood folk-art style, soft gouache brushwork with subtle watercolor washes, warm earth tones, gentle cozy fairytale atmosphere, hand-illustrated charm.
+Subject: a noble stag-bishop standing on a chess pedestal, tall branching antlers, wearing simple monk's vestments with a small gold cross at the chest, calm contemplative half-closed eyes.
+Material: sculpted from pale honey-cream painted wood with natural grain showing through, warm amber highlights, soft gold-leaf accents on jewelry and trim.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fable/bB.png   —   Stag Bishop (dark)
+──────────────────────────────────────────────────────────────────────
+Whimsical children's storybook illustration, painted-wood folk-art style, soft gouache brushwork with subtle watercolor washes, warm earth tones, gentle cozy fairytale atmosphere, hand-illustrated charm.
+Subject: a noble stag-bishop standing on a chess pedestal, tall branching antlers, wearing simple monk's vestments with a small gold cross at the chest, calm contemplative half-closed eyes.
+Material: sculpted from deep walnut-stained wood with charcoal patina, mahogany shadows, antique-bronze accents on jewelry and trim.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fable/wN.png   —   Hare Knight (light)
+──────────────────────────────────────────────────────────────────────
+Whimsical children's storybook illustration, painted-wood folk-art style, soft gouache brushwork with subtle watercolor washes, warm earth tones, gentle cozy fairytale atmosphere, hand-illustrated charm.
+Subject: a brave hare-knight standing on a chess pedestal in light leather armor with a steel helmet band, very tall alert ears tilted slightly back, determined wide eyes, one paw raised at the chest in salute.
+Material: sculpted from pale honey-cream painted wood with natural grain showing through, warm amber highlights, soft gold-leaf accents on jewelry and trim.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fable/bN.png   —   Hare Knight (dark)
+──────────────────────────────────────────────────────────────────────
+Whimsical children's storybook illustration, painted-wood folk-art style, soft gouache brushwork with subtle watercolor washes, warm earth tones, gentle cozy fairytale atmosphere, hand-illustrated charm.
+Subject: a brave hare-knight standing on a chess pedestal in light leather armor with a steel helmet band, very tall alert ears tilted slightly back, determined wide eyes, one paw raised at the chest in salute.
+Material: sculpted from deep walnut-stained wood with charcoal patina, mahogany shadows, antique-bronze accents on jewelry and trim.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fable/wP.png   —   Hedgehog Pawn (light)
+──────────────────────────────────────────────────────────────────────
+Whimsical children's storybook illustration, painted-wood folk-art style, soft gouache brushwork with subtle watercolor washes, warm earth tones, gentle cozy fairytale atmosphere, hand-illustrated charm.
+Subject: a small round hedgehog-pawn on a chess pedestal, spiky back covering the whole dome, friendly little face with tiny round eyes peeking out the front, two tiny paws clutching a short wooden spear.
+Material: sculpted from pale honey-cream painted wood with natural grain showing through, warm amber highlights, soft gold-leaf accents on jewelry and trim.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fable/bP.png   —   Hedgehog Pawn (dark)
+──────────────────────────────────────────────────────────────────────
+Whimsical children's storybook illustration, painted-wood folk-art style, soft gouache brushwork with subtle watercolor washes, warm earth tones, gentle cozy fairytale atmosphere, hand-illustrated charm.
+Subject: a small round hedgehog-pawn on a chess pedestal, spiky back covering the whole dome, friendly little face with tiny round eyes peeking out the front, two tiny paws clutching a short wooden spear.
+Material: sculpted from deep walnut-stained wood with charcoal patina, mahogany shadows, antique-bronze accents on jewelry and trim.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+================================================================================
+                                  TEMA 2 — SCI-FI
+                            (mech / drone / robotica sleek)
+================================================================================
+
+──────────────────────────────────────────────────────────────────────
+FILE: scifi/wK.png   —   Mech King (light)
+──────────────────────────────────────────────────────────────────────
+Polished industrial product render, sleek sci-fi aesthetic, sharp geometric paneling, subtle glowing accent strips, soft ambient occlusion, octane-style render quality, matte injection-molded panels with brushed-aluminum trim, clean minimalist near-future design.
+Subject: a regal mech-king standing on a circular pedestal, three antenna spires on the crown each tipped with a glowing orb, gear-toothed crown band, broad rectangular head with a wide horizontal visor showing three indicator lights, mouth grille, large round glowing reactor core embedded in the chest plate, shoulder rivets.
+Material: body in glossy off-white ceramic plastic with polished chrome trim, electric cyan glow on all accent strips, soft cool highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: scifi/bK.png   —   Mech King (dark)
+──────────────────────────────────────────────────────────────────────
+Polished industrial product render, sleek sci-fi aesthetic, sharp geometric paneling, subtle glowing accent strips, soft ambient occlusion, octane-style render quality, matte injection-molded panels with brushed-aluminum trim, clean minimalist near-future design.
+Subject: a regal mech-king standing on a circular pedestal, three antenna spires on the crown each tipped with a glowing orb, gear-toothed crown band, broad rectangular head with a wide horizontal visor showing three indicator lights, mouth grille, large round glowing reactor core embedded in the chest plate, shoulder rivets.
+Material: body in deep matte gunmetal grey with polished chrome trim, electric cyan glow on all accent strips, sharp specular highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: scifi/wQ.png   —   Drone Queen (light)
+──────────────────────────────────────────────────────────────────────
+Polished industrial product render, sleek sci-fi aesthetic, sharp geometric paneling, subtle glowing accent strips, soft ambient occlusion, octane-style render quality, matte injection-molded panels with brushed-aluminum trim, clean minimalist near-future design.
+Subject: an imperial drone-queen hovering above a circular pedestal, four horizontal rotor arms with chrome blade-rings at the tips, central crown with a single glowing gem, sleek elongated pod body with a horizontal sensor band of four small lights, diamond-shaped power core at the abdomen, two thin landing struts.
+Material: body in glossy off-white ceramic plastic with polished chrome trim, electric cyan glow on all accent strips, soft cool highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: scifi/bQ.png   —   Drone Queen (dark)
+──────────────────────────────────────────────────────────────────────
+Polished industrial product render, sleek sci-fi aesthetic, sharp geometric paneling, subtle glowing accent strips, soft ambient occlusion, octane-style render quality, matte injection-molded panels with brushed-aluminum trim, clean minimalist near-future design.
+Subject: an imperial drone-queen hovering above a circular pedestal, four horizontal rotor arms with chrome blade-rings at the tips, central crown with a single glowing gem, sleek elongated pod body with a horizontal sensor band of four small lights, diamond-shaped power core at the abdomen, two thin landing struts.
+Material: body in deep matte gunmetal grey with polished chrome trim, electric cyan glow on all accent strips, sharp specular highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: scifi/wR.png   —   Capsule Rook (light)
+──────────────────────────────────────────────────────────────────────
+Polished industrial product render, sleek sci-fi aesthetic, sharp geometric paneling, subtle glowing accent strips, soft ambient occlusion, octane-style render quality, matte injection-molded panels with brushed-aluminum trim, clean minimalist near-future design.
+Subject: a capsule-rook in the shape of a rocket silo on a circular pedestal, tall pointed nose with a single antenna, three round portholes stacked vertically down the cylindrical body, two angular fins flaring out at the sides, three booster nozzles glowing softly at the base, sealed hatch door near the bottom.
+Material: body in glossy off-white ceramic plastic with polished chrome trim, electric cyan glow on all accent strips, soft cool highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: scifi/bR.png   —   Capsule Rook (dark)
+──────────────────────────────────────────────────────────────────────
+Polished industrial product render, sleek sci-fi aesthetic, sharp geometric paneling, subtle glowing accent strips, soft ambient occlusion, octane-style render quality, matte injection-molded panels with brushed-aluminum trim, clean minimalist near-future design.
+Subject: a capsule-rook in the shape of a rocket silo on a circular pedestal, tall pointed nose with a single antenna, three round portholes stacked vertically down the cylindrical body, two angular fins flaring out at the sides, three booster nozzles glowing softly at the base, sealed hatch door near the bottom.
+Material: body in deep matte gunmetal grey with polished chrome trim, electric cyan glow on all accent strips, sharp specular highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: scifi/wB.png   —   Satellite Bishop (light)
+──────────────────────────────────────────────────────────────────────
+Polished industrial product render, sleek sci-fi aesthetic, sharp geometric paneling, subtle glowing accent strips, soft ambient occlusion, octane-style render quality, matte injection-molded panels with brushed-aluminum trim, clean minimalist near-future design.
+Subject: a satellite-bishop on a circular pedestal, parabolic dish antenna at the top, rectangular main body with a grid of four small windows and two horizontal vent strips, two flat solar-panel wings extending to the sides on thin connectors, polygonal mitre-shaped lower section.
+Material: body in glossy off-white ceramic plastic with polished chrome trim, electric cyan glow on all accent strips, soft cool highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: scifi/bB.png   —   Satellite Bishop (dark)
+──────────────────────────────────────────────────────────────────────
+Polished industrial product render, sleek sci-fi aesthetic, sharp geometric paneling, subtle glowing accent strips, soft ambient occlusion, octane-style render quality, matte injection-molded panels with brushed-aluminum trim, clean minimalist near-future design.
+Subject: a satellite-bishop on a circular pedestal, parabolic dish antenna at the top, rectangular main body with a grid of four small windows and two horizontal vent strips, two flat solar-panel wings extending to the sides on thin connectors, polygonal mitre-shaped lower section.
+Material: body in deep matte gunmetal grey with polished chrome trim, electric cyan glow on all accent strips, sharp specular highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: scifi/wN.png   —   Bot Knight (light)
+──────────────────────────────────────────────────────────────────────
+Polished industrial product render, sleek sci-fi aesthetic, sharp geometric paneling, subtle glowing accent strips, soft ambient occlusion, octane-style render quality, matte injection-molded panels with brushed-aluminum trim, clean minimalist near-future design.
+Subject: a bot-knight standing on a circular pedestal, angular helmet with two short horns and a wide single-strip visor showing three glowing eye-lights, rectangular jaw with a row of three vent slits, rounded shoulder pauldrons with a rivet each, mechanical arm extending forward holding a small chrome weapon, X-shaped chest plate with a central indicator light.
+Material: body in glossy off-white ceramic plastic with polished chrome trim, electric cyan glow on all accent strips, soft cool highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: scifi/bN.png   —   Bot Knight (dark)
+──────────────────────────────────────────────────────────────────────
+Polished industrial product render, sleek sci-fi aesthetic, sharp geometric paneling, subtle glowing accent strips, soft ambient occlusion, octane-style render quality, matte injection-molded panels with brushed-aluminum trim, clean minimalist near-future design.
+Subject: a bot-knight standing on a circular pedestal, angular helmet with two short horns and a wide single-strip visor showing three glowing eye-lights, rectangular jaw with a row of three vent slits, rounded shoulder pauldrons with a rivet each, mechanical arm extending forward holding a small chrome weapon, X-shaped chest plate with a central indicator light.
+Material: body in deep matte gunmetal grey with polished chrome trim, electric cyan glow on all accent strips, sharp specular highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: scifi/wP.png   —   Probe Pawn (light)
+──────────────────────────────────────────────────────────────────────
+Polished industrial product render, sleek sci-fi aesthetic, sharp geometric paneling, subtle glowing accent strips, soft ambient occlusion, octane-style render quality, matte injection-molded panels with brushed-aluminum trim, clean minimalist near-future design.
+Subject: a small probe-pawn drone hovering over a circular pedestal, slim antenna with a sphere on top, round spherical head with a horizontal visor band showing two cyan lights, two small side thrusters with exhaust fins, a flat hover-ring around its middle, small rectangular cargo box with two vent slits below, two short landing struts.
+Material: body in glossy off-white ceramic plastic with polished chrome trim, electric cyan glow on all accent strips, soft cool highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: scifi/bP.png   —   Probe Pawn (dark)
+──────────────────────────────────────────────────────────────────────
+Polished industrial product render, sleek sci-fi aesthetic, sharp geometric paneling, subtle glowing accent strips, soft ambient occlusion, octane-style render quality, matte injection-molded panels with brushed-aluminum trim, clean minimalist near-future design.
+Subject: a small probe-pawn drone hovering over a circular pedestal, slim antenna with a sphere on top, round spherical head with a horizontal visor band showing two cyan lights, two small side thrusters with exhaust fins, a flat hover-ring around its middle, small rectangular cargo box with two vent slits below, two short landing struts.
+Material: body in deep matte gunmetal grey with polished chrome trim, electric cyan glow on all accent strips, sharp specular highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+================================================================================
+                                  TEMA 3 — ELVEN
+                        (alto fantasy scolpito, art-nouveau)
+================================================================================
+
+──────────────────────────────────────────────────────────────────────
+FILE: elven/wK.png   —   Elven High-King (light)
+──────────────────────────────────────────────────────────────────────
+Art-nouveau high-fantasy Tolkien-esque, intricate hand-carved sculpture, flowing organic curves, leaf and star and vine motifs, slim elegant elongated proportions, museum-quality artisan craftsmanship, soft directional rim light, subtle filigree engraving.
+Subject: an elven high-king on a fluted pedestal, tall pointed five-spired crown set with four small jewels, long pointed ears just visible at the sides, slender noble face with closed almond eyes, flowing high-collared robe with vertical fold lines, an eight-pointed star brooch at the chest.
+Material: carved from pristine polished alabaster marble with delicate silver-leaf inlay tracing the engraved motifs, cool moonlight reflections.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: elven/bK.png   —   Elven High-King (dark)
+──────────────────────────────────────────────────────────────────────
+Art-nouveau high-fantasy Tolkien-esque, intricate hand-carved sculpture, flowing organic curves, leaf and star and vine motifs, slim elegant elongated proportions, museum-quality artisan craftsmanship, soft directional rim light, subtle filigree engraving.
+Subject: an elven high-king on a fluted pedestal, tall pointed five-spired crown set with four small jewels, long pointed ears just visible at the sides, slender noble face with closed almond eyes, flowing high-collared robe with vertical fold lines, an eight-pointed star brooch at the chest.
+Material: carved from glossy obsidian with antique tarnished silver inlay tracing the engraved motifs, deep cool shadows with starlight highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: elven/wQ.png   —   Elven Queen (light)
+──────────────────────────────────────────────────────────────────────
+Art-nouveau high-fantasy Tolkien-esque, intricate hand-carved sculpture, flowing organic curves, leaf and star and vine motifs, slim elegant elongated proportions, museum-quality artisan craftsmanship, soft directional rim light, subtle filigree engraving.
+Subject: an elven queen on a fluted pedestal, delicate filigree tiara crowned with a large radiant starburst, very long flowing wavy hair cascading down both sides past the shoulders, almond eyes, fitted floor-length gown with embroidered floral medallions running down the front.
+Material: carved from pristine polished alabaster marble with delicate silver-leaf inlay tracing the engraved motifs, cool moonlight reflections.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: elven/bQ.png   —   Elven Queen (dark)
+──────────────────────────────────────────────────────────────────────
+Art-nouveau high-fantasy Tolkien-esque, intricate hand-carved sculpture, flowing organic curves, leaf and star and vine motifs, slim elegant elongated proportions, museum-quality artisan craftsmanship, soft directional rim light, subtle filigree engraving.
+Subject: an elven queen on a fluted pedestal, delicate filigree tiara crowned with a large radiant starburst, very long flowing wavy hair cascading down both sides past the shoulders, almond eyes, fitted floor-length gown with embroidered floral medallions running down the front.
+Material: carved from glossy obsidian with antique tarnished silver inlay tracing the engraved motifs, deep cool shadows with starlight highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: elven/wR.png   —   Elven Spire-Tower (light)
+──────────────────────────────────────────────────────────────────────
+Art-nouveau high-fantasy Tolkien-esque, intricate hand-carved sculpture, flowing organic curves, leaf and star and vine motifs, slim elegant elongated proportions, museum-quality artisan craftsmanship, soft directional rim light, subtle filigree engraving.
+Subject: an elven spire-tower on a fluted pedestal, single needle-thin steeple at the top flying a small triangular pennant flag, three small spike battlements below, two narrow pointed Gothic arched windows with a central radiant star emblem between them, larger arched front door at the base.
+Material: carved from pristine polished alabaster marble with delicate silver-leaf inlay tracing the engraved motifs, cool moonlight reflections.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: elven/bR.png   —   Elven Spire-Tower (dark)
+──────────────────────────────────────────────────────────────────────
+Art-nouveau high-fantasy Tolkien-esque, intricate hand-carved sculpture, flowing organic curves, leaf and star and vine motifs, slim elegant elongated proportions, museum-quality artisan craftsmanship, soft directional rim light, subtle filigree engraving.
+Subject: an elven spire-tower on a fluted pedestal, single needle-thin steeple at the top flying a small triangular pennant flag, three small spike battlements below, two narrow pointed Gothic arched windows with a central radiant star emblem between them, larger arched front door at the base.
+Material: carved from glossy obsidian with antique tarnished silver inlay tracing the engraved motifs, deep cool shadows with starlight highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: elven/wB.png   —   Elven Mage (light)
+──────────────────────────────────────────────────────────────────────
+Art-nouveau high-fantasy Tolkien-esque, intricate hand-carved sculpture, flowing organic curves, leaf and star and vine motifs, slim elegant elongated proportions, museum-quality artisan craftsmanship, soft directional rim light, subtle filigree engraving.
+Subject: an elven mage on a fluted pedestal, very tall pointed wizard hat decorated with a single star and a thin brim, long pointed ears, long forked silver-grey beard reaching mid-chest, ankle-length robe with a star emblem at the chest, holding a tall slender staff with a glowing crystal orb in the right hand.
+Material: carved from pristine polished alabaster marble with delicate silver-leaf inlay tracing the engraved motifs, cool moonlight reflections.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: elven/bB.png   —   Elven Mage (dark)
+──────────────────────────────────────────────────────────────────────
+Art-nouveau high-fantasy Tolkien-esque, intricate hand-carved sculpture, flowing organic curves, leaf and star and vine motifs, slim elegant elongated proportions, museum-quality artisan craftsmanship, soft directional rim light, subtle filigree engraving.
+Subject: an elven mage on a fluted pedestal, very tall pointed wizard hat decorated with a single star and a thin brim, long pointed ears, long forked silver-grey beard reaching mid-chest, ankle-length robe with a star emblem at the chest, holding a tall slender staff with a glowing crystal orb in the right hand.
+Material: carved from glossy obsidian with antique tarnished silver inlay tracing the engraved motifs, deep cool shadows with starlight highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: elven/wN.png   —   Elven Steed (light)
+──────────────────────────────────────────────────────────────────────
+Art-nouveau high-fantasy Tolkien-esque, intricate hand-carved sculpture, flowing organic curves, leaf and star and vine motifs, slim elegant elongated proportions, museum-quality artisan craftsmanship, soft directional rim light, subtle filigree engraving.
+Subject: a noble elven steed on a fluted pedestal, slender refined horse head in profile facing right, very long flowing silken mane swept back to the left, two tall pointed ears, ornate bridle with a small star medallion on the cheek, single visible eye and one nostril.
+Material: carved from pristine polished alabaster marble with delicate silver-leaf inlay tracing the engraved motifs, cool moonlight reflections.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: elven/bN.png   —   Elven Steed (dark)
+──────────────────────────────────────────────────────────────────────
+Art-nouveau high-fantasy Tolkien-esque, intricate hand-carved sculpture, flowing organic curves, leaf and star and vine motifs, slim elegant elongated proportions, museum-quality artisan craftsmanship, soft directional rim light, subtle filigree engraving.
+Subject: a noble elven steed on a fluted pedestal, slender refined horse head in profile facing right, very long flowing silken mane swept back to the left, two tall pointed ears, ornate bridle with a small star medallion on the cheek, single visible eye and one nostril.
+Material: carved from glossy obsidian with antique tarnished silver inlay tracing the engraved motifs, deep cool shadows with starlight highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: elven/wP.png   —   Hooded Elven Archer (light)
+──────────────────────────────────────────────────────────────────────
+Art-nouveau high-fantasy Tolkien-esque, intricate hand-carved sculpture, flowing organic curves, leaf and star and vine motifs, slim elegant elongated proportions, museum-quality artisan craftsmanship, soft directional rim light, subtle filigree engraving.
+Subject: a hooded elven archer on a fluted pedestal, tall pointed hood concealing the face except for two small glowing eyes deep in shadow, long full-length cloak with a central vertical fold seam, a tall longbow strung diagonally across the back, a small quiver of arrows tips visible at the right shoulder, narrow belt with a star buckle.
+Material: carved from pristine polished alabaster marble with delicate silver-leaf inlay tracing the engraved motifs, cool moonlight reflections.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: elven/bP.png   —   Hooded Elven Archer (dark)
+──────────────────────────────────────────────────────────────────────
+Art-nouveau high-fantasy Tolkien-esque, intricate hand-carved sculpture, flowing organic curves, leaf and star and vine motifs, slim elegant elongated proportions, museum-quality artisan craftsmanship, soft directional rim light, subtle filigree engraving.
+Subject: a hooded elven archer on a fluted pedestal, tall pointed hood concealing the face except for two small glowing eyes deep in shadow, long full-length cloak with a central vertical fold seam, a tall longbow strung diagonally across the back, a small quiver of arrows tips visible at the right shoulder, narrow belt with a star buckle.
+Material: carved from glossy obsidian with antique tarnished silver inlay tracing the engraved motifs, deep cool shadows with starlight highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+================================================================================
+                                  TEMA 4 — ORCISH
+                            (orchi forgiati, ossa, ferro)
+================================================================================
+
+──────────────────────────────────────────────────────────────────────
+FILE: orcish/wK.png   —   Orc Warlord-King (light)
+──────────────────────────────────────────────────────────────────────
+Dark fantasy iron-forged warband, brutal heavy proportions, jagged spikes, bone fragments and skull motifs, hammered metalwork with rune engravings, weathered patina, dramatic chiaroscuro lighting, blacksmith-and-bonecraft quality, war-camp aesthetic with leather wraps.
+Subject: an orc warlord-king on a stone pedestal, jagged spiked iron crown of seven uneven spikes, heavy brow ridge, two large upward-curving tusks from the lower jaw, snarling mouth, broad armored chestplate with a carved skull motif at the center, two large shoulder spikes jutting outward.
+Material: bleached bone and rough hammered pewter, with cracked leather strap wraps, weathered ivory tones, dim cold highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: orcish/bK.png   —   Orc Warlord-King (dark)
+──────────────────────────────────────────────────────────────────────
+Dark fantasy iron-forged warband, brutal heavy proportions, jagged spikes, bone fragments and skull motifs, hammered metalwork with rune engravings, weathered patina, dramatic chiaroscuro lighting, blacksmith-and-bonecraft quality, war-camp aesthetic with leather wraps.
+Subject: an orc warlord-king on a stone pedestal, jagged spiked iron crown of seven uneven spikes, heavy brow ridge, two large upward-curving tusks from the lower jaw, snarling mouth, broad armored chestplate with a carved skull motif at the center, two large shoulder spikes jutting outward.
+Material: charred black iron and obsidian with rusted bronze accents, blood-red leather strap wraps, soot-darkened surface with sharp orange ember highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: orcish/wQ.png   —   Orc Shamaness (light)
+──────────────────────────────────────────────────────────────────────
+Dark fantasy iron-forged warband, brutal heavy proportions, jagged spikes, bone fragments and skull motifs, hammered metalwork with rune engravings, weathered patina, dramatic chiaroscuro lighting, blacksmith-and-bonecraft quality, war-camp aesthetic with leather wraps.
+Subject: an orc shamaness on a stone pedestal, two large curved bone horns sweeping outward at the temples, bone-fragment crown band, wild matted hair flowing down past the shoulders, tribal stripe of red war paint across the eyes, two short upward tusks, layered necklace of small bones and beads at the chest.
+Material: bleached bone and rough hammered pewter, with cracked leather strap wraps, weathered ivory tones, dim cold highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: orcish/bQ.png   —   Orc Shamaness (dark)
+──────────────────────────────────────────────────────────────────────
+Dark fantasy iron-forged warband, brutal heavy proportions, jagged spikes, bone fragments and skull motifs, hammered metalwork with rune engravings, weathered patina, dramatic chiaroscuro lighting, blacksmith-and-bonecraft quality, war-camp aesthetic with leather wraps.
+Subject: an orc shamaness on a stone pedestal, two large curved bone horns sweeping outward at the temples, bone-fragment crown band, wild matted hair flowing down past the shoulders, tribal stripe of red war paint across the eyes, two short upward tusks, layered necklace of small bones and beads at the chest.
+Material: charred black iron and obsidian with rusted bronze accents, blood-red leather strap wraps, soot-darkened surface with sharp orange ember highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: orcish/wR.png   —   Orc Fortress (light)
+──────────────────────────────────────────────────────────────────────
+Dark fantasy iron-forged warband, brutal heavy proportions, jagged spikes, bone fragments and skull motifs, hammered metalwork with rune engravings, weathered patina, dramatic chiaroscuro lighting, blacksmith-and-bonecraft quality, war-camp aesthetic with leather wraps.
+Subject: a brutalist orc fortress-rook, squat heavy stone tower with five uneven spike battlements at the top, four narrow slit windows around the middle, a carved skull mounted above the iron portcullis gate at the base, the gate showing the heavy horizontal and vertical iron bars of a portcullis grid, two heavy chain links visible at the corners.
+Material: bleached bone and rough hammered pewter, with cracked leather strap wraps, weathered ivory tones, dim cold highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: orcish/bR.png   —   Orc Fortress (dark)
+──────────────────────────────────────────────────────────────────────
+Dark fantasy iron-forged warband, brutal heavy proportions, jagged spikes, bone fragments and skull motifs, hammered metalwork with rune engravings, weathered patina, dramatic chiaroscuro lighting, blacksmith-and-bonecraft quality, war-camp aesthetic with leather wraps.
+Subject: a brutalist orc fortress-rook, squat heavy stone tower with five uneven spike battlements at the top, four narrow slit windows around the middle, a carved skull mounted above the iron portcullis gate at the base, the gate showing the heavy horizontal and vertical iron bars of a portcullis grid, two heavy chain links visible at the corners.
+Material: charred black iron and obsidian with rusted bronze accents, blood-red leather strap wraps, soot-darkened surface with sharp orange ember highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: orcish/wB.png   —   Orc Shaman (light)
+──────────────────────────────────────────────────────────────────────
+Dark fantasy iron-forged warband, brutal heavy proportions, jagged spikes, bone fragments and skull motifs, hammered metalwork with rune engravings, weathered patina, dramatic chiaroscuro lighting, blacksmith-and-bonecraft quality, war-camp aesthetic with leather wraps.
+Subject: an orc shaman on a stone pedestal, wearing a bleached bone skull mask covering the whole face with empty rectangular eye sockets, two short triangular nostrils, a row of small square teeth, two short downward tusks at the chin, heavy hooded cloak with the hood casting a deep shadow at the shoulders, holding a tall gnarled staff in the right hand topped with a small skull and hanging bead charms.
+Material: bleached bone and rough hammered pewter, with cracked leather strap wraps, weathered ivory tones, dim cold highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: orcish/bB.png   —   Orc Shaman (dark)
+──────────────────────────────────────────────────────────────────────
+Dark fantasy iron-forged warband, brutal heavy proportions, jagged spikes, bone fragments and skull motifs, hammered metalwork with rune engravings, weathered patina, dramatic chiaroscuro lighting, blacksmith-and-bonecraft quality, war-camp aesthetic with leather wraps.
+Subject: an orc shaman on a stone pedestal, wearing a bleached bone skull mask covering the whole face with empty rectangular eye sockets, two short triangular nostrils, a row of small square teeth, two short downward tusks at the chin, heavy hooded cloak with the hood casting a deep shadow at the shoulders, holding a tall gnarled staff in the right hand topped with a small skull and hanging bead charms.
+Material: charred black iron and obsidian with rusted bronze accents, blood-red leather strap wraps, soot-darkened surface with sharp orange ember highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: orcish/wN.png   —   War-Boar Knight (light)
+──────────────────────────────────────────────────────────────────────
+Dark fantasy iron-forged warband, brutal heavy proportions, jagged spikes, bone fragments and skull motifs, hammered metalwork with rune engravings, weathered patina, dramatic chiaroscuro lighting, blacksmith-and-bonecraft quality, war-camp aesthetic with leather wraps.
+Subject: a war-boar knight on a stone pedestal, broad-headed armored boar in profile facing left, two large upward-curving tusks at the snout, two smaller lower tusks, bristly mohawk of spikes running along the head and neck, heavy iron neck plate buckled across the throat, one visible angry glaring eye, one hoof raised slightly.
+Material: bleached bone and rough hammered pewter, with cracked leather strap wraps, weathered ivory tones, dim cold highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: orcish/bN.png   —   War-Boar Knight (dark)
+──────────────────────────────────────────────────────────────────────
+Dark fantasy iron-forged warband, brutal heavy proportions, jagged spikes, bone fragments and skull motifs, hammered metalwork with rune engravings, weathered patina, dramatic chiaroscuro lighting, blacksmith-and-bonecraft quality, war-camp aesthetic with leather wraps.
+Subject: a war-boar knight on a stone pedestal, broad-headed armored boar in profile facing left, two large upward-curving tusks at the snout, two smaller lower tusks, bristly mohawk of spikes running along the head and neck, heavy iron neck plate buckled across the throat, one visible angry glaring eye, one hoof raised slightly.
+Material: charred black iron and obsidian with rusted bronze accents, blood-red leather strap wraps, soot-darkened surface with sharp orange ember highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: orcish/wP.png   —   Orc Grunt (light)
+──────────────────────────────────────────────────────────────────────
+Dark fantasy iron-forged warband, brutal heavy proportions, jagged spikes, bone fragments and skull motifs, hammered metalwork with rune engravings, weathered patina, dramatic chiaroscuro lighting, blacksmith-and-bonecraft quality, war-camp aesthetic with leather wraps.
+Subject: an orc grunt-pawn on a stone pedestal, heavy horned iron helmet with a single central horn spike and a narrow horizontal eye-slit visor showing two small glowing eyes, two short upward tusks below the helmet, square jaw, broad armored shoulders, two crossed leather straps making an X across the chest, gauntleted fists at the sides.
+Material: bleached bone and rough hammered pewter, with cracked leather strap wraps, weathered ivory tones, dim cold highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: orcish/bP.png   —   Orc Grunt (dark)
+──────────────────────────────────────────────────────────────────────
+Dark fantasy iron-forged warband, brutal heavy proportions, jagged spikes, bone fragments and skull motifs, hammered metalwork with rune engravings, weathered patina, dramatic chiaroscuro lighting, blacksmith-and-bonecraft quality, war-camp aesthetic with leather wraps.
+Subject: an orc grunt-pawn on a stone pedestal, heavy horned iron helmet with a single central horn spike and a narrow horizontal eye-slit visor showing two small glowing eyes, two short upward tusks below the helmet, square jaw, broad armored shoulders, two crossed leather straps making an X across the chest, gauntleted fists at the sides.
+Material: charred black iron and obsidian with rusted bronze accents, blood-red leather strap wraps, soot-darkened surface with sharp orange ember highlights.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+================================================================================
+                                      END
+================================================================================
