@@ -285,14 +285,14 @@ function updateCapturedPieces() {
   var whiteHtml = '';
   whiteCaptured.forEach(function(p) {
     var url = resolvePieceUrl(theme, 'w' + p.toUpperCase());
-    whiteHtml += '<img src="' + url + '" style="width:40px;height:40px;" title="' + p + '">';
+    whiteHtml += '<img src="' + url + '" style="width:40px;height:40px;object-fit:contain;" title="' + p + '">';
   });
   $('#whiteCaptured').html('<h6 class="text-muted">Catturati dal Nero</h6>' + whiteHtml);
   $('#whiteCapturedRight').html('<h6 class="text-muted">Catturati dal Nero</h6>' + whiteHtml);
   var blackHtml = '';
   blackCaptured.forEach(function(p) {
     var url = resolvePieceUrl(theme, 'b' + p.toUpperCase());
-    blackHtml += '<img src="' + url + '" style="width:40px;height:40px;" title="' + p + '">';
+    blackHtml += '<img src="' + url + '" style="width:40px;height:40px;object-fit:contain;" title="' + p + '">';
   });
   $('#blackCaptured').html('<h6 class="text-muted">Catturati dal Bianco</h6>' + blackHtml);
   $('#blackCapturedRight').html('<h6 class="text-muted">Catturati dal Bianco</h6>' + blackHtml);

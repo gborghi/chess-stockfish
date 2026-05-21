@@ -372,6 +372,14 @@ html, body {
   background: var(--ink);
 }
 
+/* Preserve piece aspect ratio: chessboard.js stretches imgs to 100%×100%
+   which squishes non-square PNGs. object-fit:contain keeps proportions. */
+#myBoard img,
+#setupBoard img {
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
 /* Chessboard.js inner notation: keep visible but tint it */
 .notation-322f9 {
   font-family: var(--font-display) !important;
@@ -457,6 +465,8 @@ html, body {
 .captured-row img {
   width: 30px;
   height: 30px;
+  object-fit: contain;
+  object-position: center;
 }
 
 /* ============================================================================
