@@ -58,7 +58,7 @@
         </div>
 
         <div class="ctrl-group">
-          <label class="ctrl-label">Pezzi</label>
+          <label class="ctrl-label" id="pieceWhiteLabel">Pezzi</label>
           <select id="pieceThemeSelect" class="form-select form-select-sm">
             <option value="cburnett" selected>Cburnett</option>
             <option value="chessnut">Chessnut</option>
@@ -88,10 +88,52 @@
             <option value="orcish">✦ Orcish (orchi)</option>
             <option disabled>───── HD PNG ─────</option>
             <option value="fable_hd">✨ Fable HD</option>
+            <option value="fable2_hd">✨ Fable HD (alt)</option>
             <option value="scifi_hd">✨ Sci-fi HD</option>
             <option value="elven_hd">✨ Elven HD</option>
             <option value="orcish_hd">✨ Orcish HD</option>
           </select>
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" id="asymmetricToggle">
+            <label class="form-check-label" for="asymmetricToggle">Pezzi diversi per Bianco / Nero</label>
+          </div>
+          <div id="blackPiecesWrap" class="d-none mt-2">
+            <label class="ctrl-label">Pezzi (Nero)</label>
+            <select id="pieceThemeSelectBlack" class="form-select form-select-sm">
+              <option value="cburnett" selected>Cburnett</option>
+              <option value="chessnut">Chessnut</option>
+              <option value="companion">Companion</option>
+              <option value="dubrovny">Dubrovny</option>
+              <option value="fantasy">Fantasy</option>
+              <option value="fresca">Fresca</option>
+              <option value="gioco">Gioco</option>
+              <option value="governor">Governor</option>
+              <option value="horsey">Horsey</option>
+              <option value="icpieces">ICpieces</option>
+              <option value="kosal">Kosal</option>
+              <option value="leipzig">Leipzig</option>
+              <option value="letter">Letter</option>
+              <option value="maestro">Maestro</option>
+              <option value="merida">Merida</option>
+              <option value="mpchess">MPchess</option>
+              <option value="pirouetti">Pirouetti</option>
+              <option value="reillycraig">Reillycraig</option>
+              <option value="shapes">Shapes</option>
+              <option value="spatial">Spatial</option>
+              <option value="tatiana">Tatiana</option>
+              <option disabled>───── Wireframe SVG ─────</option>
+              <option value="fable">✦ Fable (animali)</option>
+              <option value="scifi">✦ Sci-fi (macchine)</option>
+              <option value="elven">✦ Elven (elfi)</option>
+              <option value="orcish">✦ Orcish (orchi)</option>
+              <option disabled>───── HD PNG ─────</option>
+              <option value="fable_hd">✨ Fable HD</option>
+              <option value="fable2_hd">✨ Fable HD (alt)</option>
+              <option value="scifi_hd">✨ Sci-fi HD</option>
+              <option value="elven_hd">✨ Elven HD</option>
+              <option value="orcish_hd">✨ Orcish HD</option>
+            </select>
+          </div>
           <label class="ctrl-label mt-2">Scacchiera</label>
           <select id="boardThemeSelect" class="form-select form-select-sm">
             <option value="classic" selected>Classic</option>

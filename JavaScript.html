@@ -164,11 +164,24 @@ var pieceThemes = {
   'orcish':      function(piece) { return buildSvgPiece('orcish', piece); },
   // ── HD PNG sets (Grok/Aurora generated) served via jsDelivr CDN ─────────
   'fable_hd':    'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/fable/{piece}.png',
+  'fable2_hd':   'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/fable2/{piece}.png',
   'scifi_hd':    'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/scifi/{piece}.png',
   'elven_hd':    'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/elven/{piece}.png',
   'orcish_hd':   'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/orcish/{piece}.png'
 };
 var currentPieceTheme = pieceThemes['cburnett'];
+var currentPieceThemeBlack = pieceThemes['cburnett'];
+var asymmetricPieces = false;
+
+// Returns a function chessboard.js can call per-piece. Dispatches between
+// the white and black themes when asymmetric mode is on.
+function buildPieceThemeFn() {
+  return function(piece) {
+    var isWhite = piece.charAt(0) === 'w';
+    var theme = (asymmetricPieces && !isWhite) ? currentPieceThemeBlack : currentPieceTheme;
+    return resolvePieceUrl(theme, piece);
+  };
+}
 
 var boardThemes = {
   'classic':   { light: '#f0d9b5', dark: '#b58863' },
@@ -281,17 +294,21 @@ function highlightThreatsAndUnprotected() {
 }
 
 function updateCapturedPieces() {
-  var theme = currentPieceTheme;
+  // whiteCaptured holds WHITE pieces (taken by Black) — use the white theme.
+  // blackCaptured holds BLACK pieces (taken by White) — use the black theme
+  // when asymmetric, else the unified white theme.
+  var whiteTheme = currentPieceTheme;
+  var blackTheme = asymmetricPieces ? currentPieceThemeBlack : currentPieceTheme;
   var whiteHtml = '';
   whiteCaptured.forEach(function(p) {
-    var url = resolvePieceUrl(theme, 'w' + p.toUpperCase());
+    var url = resolvePieceUrl(whiteTheme, 'w' + p.toUpperCase());
     whiteHtml += '<img src="' + url + '" style="width:40px;height:40px;object-fit:contain;" title="' + p + '">';
   });
   $('#whiteCaptured').html('<h6 class="text-muted">Catturati dal Nero</h6>' + whiteHtml);
   $('#whiteCapturedRight').html('<h6 class="text-muted">Catturati dal Nero</h6>' + whiteHtml);
   var blackHtml = '';
   blackCaptured.forEach(function(p) {
-    var url = resolvePieceUrl(theme, 'b' + p.toUpperCase());
+    var url = resolvePieceUrl(blackTheme, 'b' + p.toUpperCase());
     blackHtml += '<img src="' + url + '" style="width:40px;height:40px;object-fit:contain;" title="' + p + '">';
   });
   $('#blackCaptured').html('<h6 class="text-muted">Catturati dal Bianco</h6>' + blackHtml);
@@ -595,7 +612,7 @@ function initBoard() {
   board = Chessboard('myBoard', {
     draggable: !isMobile,
     position: 'start',
-    pieceTheme: currentPieceTheme,
+    pieceTheme: buildPieceThemeFn(),
     showNotation: true,
     onDragStart: onDragStart,
     onDrop: onDrop,
@@ -769,12 +786,14 @@ $(document).ready(function() {
   $('#boardThemeSelect').on('change', function() { applyBoardTheme($(this).val()); });
   applyBoardTheme('classic');
 
-  $('#pieceThemeSelect').on('change', function() {
-    currentPieceTheme = pieceThemes[$(this).val()] || pieceThemes['cburnett'];
+  // Rebuilds the main board with whatever piece-theme state is currently set
+  // (white theme, black theme, asymmetric toggle). Called from all three
+  // piece-related controls so they share one code path.
+  function rebuildBoardWithCurrentTheme() {
     board = Chessboard('myBoard', {
       draggable: true,
       position: game.fen(),
-      pieceTheme: currentPieceTheme,
+      pieceTheme: buildPieceThemeFn(),
       showNotation: true,
       onDragStart: onDragStart,
       onDrop: onDrop,
@@ -783,6 +802,31 @@ $(document).ready(function() {
     });
     highlightThreatsAndUnprotected();
     updateCapturedPieces();
+  }
+
+  $('#pieceThemeSelect').on('change', function() {
+    currentPieceTheme = pieceThemes[$(this).val()] || pieceThemes['cburnett'];
+    rebuildBoardWithCurrentTheme();
+  });
+
+  $('#pieceThemeSelectBlack').on('change', function() {
+    currentPieceThemeBlack = pieceThemes[$(this).val()] || pieceThemes['cburnett'];
+    if (asymmetricPieces) rebuildBoardWithCurrentTheme();
+  });
+
+  $('#asymmetricToggle').on('change', function() {
+    asymmetricPieces = $(this).is(':checked');
+    if (asymmetricPieces) {
+      $('#blackPiecesWrap').removeClass('d-none');
+      $('#pieceWhiteLabel').text('Pezzi (Bianco)');
+      // Sync the black select to whatever the unified value currently was
+      // so the user doesn't see a sudden visual jump.
+      $('#pieceThemeSelectBlack').val($('#pieceThemeSelect').val()).trigger('change');
+    } else {
+      $('#blackPiecesWrap').addClass('d-none');
+      $('#pieceWhiteLabel').text('Pezzi');
+      rebuildBoardWithCurrentTheme();
+    }
   });
 
   $('#setupButton').click(function() {
@@ -796,7 +840,7 @@ $(document).ready(function() {
         dropOffBoard: 'trash',
         sparePieces: true,
         position: game.fen(),
-        pieceTheme: currentPieceTheme,
+        pieceTheme: buildPieceThemeFn(),
         onDrop: function() { return true; }
       });
       setupBoard.resize();
