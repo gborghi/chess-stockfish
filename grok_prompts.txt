@@ -1,7 +1,17 @@
 ================================================================================
 GROK / AURORA — CHESS PIECE GENERATION PROMPTS
-48 prompts total: 4 themed sets × 6 piece types × 2 colors (light/dark)
+72 prompts total: 6 themed sets × 6 piece types × 2 colors (light/dark)
 ================================================================================
+
+⚠️  HARD REQUIREMENTS (apply to every single prompt — re-read each time):
+    1. BACKGROUND must be 100% transparent PNG (alpha channel). NO color fill,
+       NO gradient, NO ground shadow, NO scene. If true alpha is impossible,
+       fall back to a flat magenta #FF00FF chroma-key to be removed after.
+    2. WHITE variants must be DISTINCTIVELY MAINLY WHITE — the whole figure
+       reads predominantly white/ivory at first glance. No dark areas.
+    3. BLACK variants must be DISTINCTIVELY MAINLY BLACK — the whole figure
+       reads predominantly black/dark at first glance. No light areas.
+    The two color variants MUST be instantly distinguishable across a room.
 
 HOW TO USE
 ----------
@@ -19,8 +29,9 @@ Quando Grok ti restituisce l'immagine, salvala ESATTAMENTE con il nome scritto
 nel campo "FILE:" del blocco. Esempio: il primo prompt qui sotto va salvato
 come  pieces/fable/wK.png  dentro la cartella del progetto chess.
 
-Per le 48 immagini complessive le sottocartelle sono:
-    pieces/fable/    pieces/scifi/    pieces/elven/    pieces/orcish/
+Per le 72 immagini complessive le sottocartelle sono:
+    pieces/fable/      pieces/scifi/      pieces/elven/
+    pieces/orcish/     pieces/fairytale/  pieces/dinosaurs/
 
 I file dentro ognuna sono:
     wK.png  wQ.png  wR.png  wB.png  wN.png  wP.png   (varianti chiare)
@@ -438,6 +449,256 @@ Dark fantasy iron-forged warband, brutal heavy proportions, jagged spikes, bone 
 Subject: an orc grunt-pawn on a stone pedestal, heavy horned iron helmet with a single central horn spike and a narrow horizontal eye-slit visor showing two small glowing eyes, two short upward tusks below the helmet, square jaw, broad armored shoulders, two crossed leather straps making an X across the chest, gauntleted fists at the sides.
 Material: charred black iron and obsidian with rusted bronze accents, blood-red leather strap wraps, soot-darkened surface with sharp orange ember highlights.
 Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. ISOLATED ON A FULLY TRANSPARENT BACKGROUND — pure alpha channel, NO ground shadow, NO scene, NO floor, NO sky, NO border, NO text, NO logo, NO second piece. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+================================================================================
+                                 TEMA 5 — FAIRYTALE
+                  (re, principesse, maghi, unicorni — porcellana dipinta)
+================================================================================
+
+──────────────────────────────────────────────────────────────────────
+FILE: fairytale/wK.png   —   Storybook King (light)
+──────────────────────────────────────────────────────────────────────
+Classic Disney-storybook fairytale illustration style, painted-porcelain figurine aesthetic, smooth rounded forms with gentle highlights, soft pastel-warm lighting, cohesive enchanted-kingdom storybook feel.
+Subject: a storybook king on a fluted pedestal, tall jeweled royal crown with five points, full ermine-trimmed cloak flowing to the base, holding a tall scepter topped with an orb in the right hand, kindly bearded face, broad regal posture.
+Material — WHITE VARIANT: sculpted from PURE BRIGHT WHITE pristine porcelain. The ENTIRE figure must read as predominantly snowy WHITE at first glance, mainly white from head to base. Only very subtle pearl-grey shading for form definition, plus tiny pale gold-leaf accents ONLY on the crown jewels and metal trim. NO black areas, NO dark sections, NO bold colors. The piece is unmistakably WHITE.
+COLOR EMPHASIS: this is the WHITE side of the chess set — the user must immediately recognize it as a white piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fairytale/bK.png   —   Storybook King (dark)
+──────────────────────────────────────────────────────────────────────
+Classic Disney-storybook fairytale illustration style, painted-porcelain figurine aesthetic, smooth rounded forms with gentle highlights, soft pastel-warm lighting, cohesive enchanted-kingdom storybook feel.
+Subject: a storybook king on a fluted pedestal, tall jeweled royal crown with five points, full ermine-trimmed cloak flowing to the base, holding a tall scepter topped with an orb in the right hand, kindly bearded face, broad regal posture.
+Material — BLACK VARIANT: sculpted from DEEP JET BLACK polished onyx. The ENTIRE figure must read as predominantly pitch BLACK at first glance, mainly black from head to base. Only very subtle silver-grey rim highlighting for form definition, plus tiny antique-silver accents ONLY on the crown jewels and metal trim. NO white areas, NO light sections, NO bold colors. The piece is unmistakably BLACK.
+COLOR EMPHASIS: this is the BLACK side of the chess set — the user must immediately recognize it as a black piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fairytale/wQ.png   —   Fairytale Princess-Queen (light)
+──────────────────────────────────────────────────────────────────────
+Classic Disney-storybook fairytale illustration style, painted-porcelain figurine aesthetic, smooth rounded forms with gentle highlights, soft pastel-warm lighting, cohesive enchanted-kingdom storybook feel.
+Subject: a fairytale princess-queen on a fluted pedestal, delicate star-tipped tiara, flowing ball gown with a fitted bodice and full layered skirt cascading to the base, both hands gently folded at the waist holding a single rose, serene smile, long flowing hair.
+Material — WHITE VARIANT: sculpted from PURE BRIGHT WHITE pristine porcelain. The ENTIRE figure must read as predominantly snowy WHITE at first glance, mainly white from head to base. Only very subtle pearl-grey shading for form definition, plus tiny pale gold-leaf accents ONLY on the tiara and metal trim. NO black areas, NO dark sections, NO bold colors. The piece is unmistakably WHITE.
+COLOR EMPHASIS: this is the WHITE side of the chess set — the user must immediately recognize it as a white piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fairytale/bQ.png   —   Fairytale Princess-Queen (dark)
+──────────────────────────────────────────────────────────────────────
+Classic Disney-storybook fairytale illustration style, painted-porcelain figurine aesthetic, smooth rounded forms with gentle highlights, soft pastel-warm lighting, cohesive enchanted-kingdom storybook feel.
+Subject: a fairytale princess-queen on a fluted pedestal, delicate star-tipped tiara, flowing ball gown with a fitted bodice and full layered skirt cascading to the base, both hands gently folded at the waist holding a single rose, serene smile, long flowing hair.
+Material — BLACK VARIANT: sculpted from DEEP JET BLACK polished onyx. The ENTIRE figure must read as predominantly pitch BLACK at first glance, mainly black from head to base. Only very subtle silver-grey rim highlighting for form definition, plus tiny antique-silver accents ONLY on the tiara and metal trim. NO white areas, NO light sections, NO bold colors. The piece is unmistakably BLACK.
+COLOR EMPHASIS: this is the BLACK side of the chess set — the user must immediately recognize it as a black piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fairytale/wR.png   —   Enchanted Tower (light)
+──────────────────────────────────────────────────────────────────────
+Classic Disney-storybook fairytale illustration style, painted-porcelain figurine aesthetic, smooth rounded forms with gentle highlights, soft pastel-warm lighting, cohesive enchanted-kingdom storybook feel.
+Subject: an enchanted Rapunzel tower-rook on a small pedestal, tall slender stone tower with crenellated battlements at the top, a long braid of hair tumbling out of the single high arched window, climbing ivy and roses winding up the sides, arched wooden front door at the base, conical roof above the battlements.
+Material — WHITE VARIANT: sculpted from PURE BRIGHT WHITE pristine porcelain. The ENTIRE figure must read as predominantly snowy WHITE at first glance, mainly white from base to roof. Only very subtle pearl-grey shading for stonework definition, plus tiny pale gold-leaf accents ONLY on the door hinges and weathervane. NO black areas, NO dark sections, NO bold colors. The piece is unmistakably WHITE.
+COLOR EMPHASIS: this is the WHITE side of the chess set — the user must immediately recognize it as a white piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fairytale/bR.png   —   Enchanted Tower (dark)
+──────────────────────────────────────────────────────────────────────
+Classic Disney-storybook fairytale illustration style, painted-porcelain figurine aesthetic, smooth rounded forms with gentle highlights, soft pastel-warm lighting, cohesive enchanted-kingdom storybook feel.
+Subject: an enchanted Rapunzel tower-rook on a small pedestal, tall slender stone tower with crenellated battlements at the top, a long braid of hair tumbling out of the single high arched window, climbing ivy and roses winding up the sides, arched wooden front door at the base, conical roof above the battlements.
+Material — BLACK VARIANT: sculpted from DEEP JET BLACK polished onyx. The ENTIRE figure must read as predominantly pitch BLACK at first glance, mainly black from base to roof. Only very subtle silver-grey rim highlighting for stonework definition, plus tiny antique-silver accents ONLY on the door hinges and weathervane. NO white areas, NO light sections, NO bold colors. The piece is unmistakably BLACK.
+COLOR EMPHASIS: this is the BLACK side of the chess set — the user must immediately recognize it as a black piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fairytale/wB.png   —   Wizard (light)
+──────────────────────────────────────────────────────────────────────
+Classic Disney-storybook fairytale illustration style, painted-porcelain figurine aesthetic, smooth rounded forms with gentle highlights, soft pastel-warm lighting, cohesive enchanted-kingdom storybook feel.
+Subject: a wise old wizard-bishop on a fluted pedestal, very tall pointed star-decorated wizard hat with a thin brim, long flowing beard reaching to the waist, full-length robe with star and moon embroidery, holding a tall gnarled wooden staff topped with a glowing crystal orb in the right hand.
+Material — WHITE VARIANT: sculpted from PURE BRIGHT WHITE pristine porcelain. The ENTIRE figure must read as predominantly snowy WHITE at first glance, mainly white from hat tip to base. Only very subtle pearl-grey shading for fold definition, plus tiny pale gold-leaf accents ONLY on the star embroidery and the staff orb. NO black areas, NO dark sections, NO bold colors. The piece is unmistakably WHITE.
+COLOR EMPHASIS: this is the WHITE side of the chess set — the user must immediately recognize it as a white piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fairytale/bB.png   —   Wizard (dark)
+──────────────────────────────────────────────────────────────────────
+Classic Disney-storybook fairytale illustration style, painted-porcelain figurine aesthetic, smooth rounded forms with gentle highlights, soft pastel-warm lighting, cohesive enchanted-kingdom storybook feel.
+Subject: a wise old wizard-bishop on a fluted pedestal, very tall pointed star-decorated wizard hat with a thin brim, long flowing beard reaching to the waist, full-length robe with star and moon embroidery, holding a tall gnarled wooden staff topped with a glowing crystal orb in the right hand.
+Material — BLACK VARIANT: sculpted from DEEP JET BLACK polished onyx. The ENTIRE figure must read as predominantly pitch BLACK at first glance, mainly black from hat tip to base. Only very subtle silver-grey rim highlighting for fold definition, plus tiny antique-silver accents ONLY on the star embroidery and the staff orb. NO white areas, NO light sections, NO bold colors. The piece is unmistakably BLACK.
+COLOR EMPHASIS: this is the BLACK side of the chess set — the user must immediately recognize it as a black piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fairytale/wN.png   —   Unicorn (light)
+──────────────────────────────────────────────────────────────────────
+Classic Disney-storybook fairytale illustration style, painted-porcelain figurine aesthetic, smooth rounded forms with gentle highlights, soft pastel-warm lighting, cohesive enchanted-kingdom storybook feel.
+Subject: a majestic unicorn-knight on a small pedestal, slender noble horse in profile facing right, single tall spiral horn rising from the forehead, long flowing silken mane and tail, raised front hoof in a graceful rearing stance, small flower garland around the neck.
+Material — WHITE VARIANT: sculpted from PURE BRIGHT WHITE pristine porcelain. The ENTIRE figure must read as predominantly snowy WHITE at first glance, mainly white from horn tip to hooves. Only very subtle pearl-grey shading for muscle definition, plus tiny pale gold-leaf accents ONLY on the spiral horn ridges and hooves. NO black areas, NO dark sections, NO bold colors. The piece is unmistakably WHITE.
+COLOR EMPHASIS: this is the WHITE side of the chess set — the user must immediately recognize it as a white piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fairytale/bN.png   —   Unicorn (dark)
+──────────────────────────────────────────────────────────────────────
+Classic Disney-storybook fairytale illustration style, painted-porcelain figurine aesthetic, smooth rounded forms with gentle highlights, soft pastel-warm lighting, cohesive enchanted-kingdom storybook feel.
+Subject: a majestic unicorn-knight on a small pedestal, slender noble horse in profile facing right, single tall spiral horn rising from the forehead, long flowing silken mane and tail, raised front hoof in a graceful rearing stance, small flower garland around the neck.
+Material — BLACK VARIANT: sculpted from DEEP JET BLACK polished onyx. The ENTIRE figure must read as predominantly pitch BLACK at first glance, mainly black from horn tip to hooves. Only very subtle silver-grey rim highlighting for muscle definition, plus tiny antique-silver accents ONLY on the spiral horn ridges and hooves. NO white areas, NO light sections, NO bold colors. The piece is unmistakably BLACK.
+COLOR EMPHASIS: this is the BLACK side of the chess set — the user must immediately recognize it as a black piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fairytale/wP.png   —   Dwarf Pawn (light)
+──────────────────────────────────────────────────────────────────────
+Classic Disney-storybook fairytale illustration style, painted-porcelain figurine aesthetic, smooth rounded forms with gentle highlights, soft pastel-warm lighting, cohesive enchanted-kingdom storybook feel.
+Subject: a cheerful dwarf-pawn on a small pedestal, short stocky figure with a pointed felt cap, very long bushy beard reaching the belt, simple work tunic with a wide belt and a metal buckle, holding a small pickaxe over the right shoulder, friendly round face with a small button nose.
+Material — WHITE VARIANT: sculpted from PURE BRIGHT WHITE pristine porcelain. The ENTIRE figure must read as predominantly snowy WHITE at first glance, mainly white from cap to boots. Only very subtle pearl-grey shading for clothing folds, plus tiny pale gold-leaf accents ONLY on the belt buckle and pickaxe head. NO black areas, NO dark sections, NO bold colors. The piece is unmistakably WHITE.
+COLOR EMPHASIS: this is the WHITE side of the chess set — the user must immediately recognize it as a white piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: fairytale/bP.png   —   Dwarf Pawn (dark)
+──────────────────────────────────────────────────────────────────────
+Classic Disney-storybook fairytale illustration style, painted-porcelain figurine aesthetic, smooth rounded forms with gentle highlights, soft pastel-warm lighting, cohesive enchanted-kingdom storybook feel.
+Subject: a cheerful dwarf-pawn on a small pedestal, short stocky figure with a pointed felt cap, very long bushy beard reaching the belt, simple work tunic with a wide belt and a metal buckle, holding a small pickaxe over the right shoulder, friendly round face with a small button nose.
+Material — BLACK VARIANT: sculpted from DEEP JET BLACK polished onyx. The ENTIRE figure must read as predominantly pitch BLACK at first glance, mainly black from cap to boots. Only very subtle silver-grey rim highlighting for clothing folds, plus tiny antique-silver accents ONLY on the belt buckle and pickaxe head. NO white areas, NO light sections, NO bold colors. The piece is unmistakably BLACK.
+COLOR EMPHASIS: this is the BLACK side of the chess set — the user must immediately recognize it as a black piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, front-facing with a very slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: flared pedestal base, slim stem, distinctive top. Same consistent style, scale, proportions and material finish across the whole set.
+
+================================================================================
+                                TEMA 6 — DINOSAURS
+                       (T-Rex, Triceratops, Stego — fossile / ossidiana)
+================================================================================
+
+──────────────────────────────────────────────────────────────────────
+FILE: dinosaurs/wK.png   —   Tyrannosaurus Rex (light)
+──────────────────────────────────────────────────────────────────────
+High-end museum-quality natural-history sculpture style, anatomically credible prehistoric dinosaur figurines on small stone pedestals, smooth carved surfaces with subtle skin and scale texture, soft directional natural-history-display lighting, scientifically inspired but stylized for chess-piece recognizability.
+Subject: a regal Tyrannosaurus Rex-king on a circular stone pedestal, standing upright on powerful hind legs, massive head with toothy snarling jaws open, small clawed forearms held close to the chest, long thick balancing tail, a jagged iron-spike royal crown perched on the head, dominant towering posture.
+Material — WHITE VARIANT: carved from BLEACHED FOSSIL BONE. The ENTIRE figure must read as predominantly bright IVORY WHITE at first glance, mainly white from crown to pedestal. Only very subtle pale-beige shading for muscle and skin definition, plus tiny soft cool cream highlights. NO black areas, NO dark sections, NO bold colors. The piece is unmistakably WHITE.
+COLOR EMPHASIS: this is the WHITE side of the chess set — the user must immediately recognize it as a white piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: small stone pedestal base, dinosaur body filling the frame. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: dinosaurs/bK.png   —   Tyrannosaurus Rex (dark)
+──────────────────────────────────────────────────────────────────────
+High-end museum-quality natural-history sculpture style, anatomically credible prehistoric dinosaur figurines on small stone pedestals, smooth carved surfaces with subtle skin and scale texture, soft directional natural-history-display lighting, scientifically inspired but stylized for chess-piece recognizability.
+Subject: a regal Tyrannosaurus Rex-king on a circular stone pedestal, standing upright on powerful hind legs, massive head with toothy snarling jaws open, small clawed forearms held close to the chest, long thick balancing tail, a jagged iron-spike royal crown perched on the head, dominant towering posture.
+Material — BLACK VARIANT: carved from POLISHED VOLCANIC OBSIDIAN. The ENTIRE figure must read as predominantly pitch BLACK at first glance, mainly black from crown to pedestal. Only very subtle dark-grey rim highlights for muscle and skin definition, plus sharp specular black highlights. NO white areas, NO light sections, NO bold colors. The piece is unmistakably BLACK.
+COLOR EMPHASIS: this is the BLACK side of the chess set — the user must immediately recognize it as a black piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: small stone pedestal base, dinosaur body filling the frame. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: dinosaurs/wQ.png   —   Triceratops (light)
+──────────────────────────────────────────────────────────────────────
+High-end museum-quality natural-history sculpture style, anatomically credible prehistoric dinosaur figurines on small stone pedestals, smooth carved surfaces with subtle skin and scale texture, soft directional natural-history-display lighting, scientifically inspired but stylized for chess-piece recognizability.
+Subject: an elegant Triceratops-queen on a circular stone pedestal, broad four-legged stance facing slightly forward-right, three signature horns on the head (one on the snout and two long ones above the eyes), large bony neck frill rising behind the head like a natural crown, a delicate jeweled tiara resting on the brow ridge between the eyes.
+Material — WHITE VARIANT: carved from BLEACHED FOSSIL BONE. The ENTIRE figure must read as predominantly bright IVORY WHITE at first glance, mainly white from horn tips to feet. Only very subtle pale-beige shading for muscle and skin definition, plus tiny soft cool cream highlights. NO black areas, NO dark sections, NO bold colors. The piece is unmistakably WHITE.
+COLOR EMPHASIS: this is the WHITE side of the chess set — the user must immediately recognize it as a white piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: small stone pedestal base, dinosaur body filling the frame. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: dinosaurs/bQ.png   —   Triceratops (dark)
+──────────────────────────────────────────────────────────────────────
+High-end museum-quality natural-history sculpture style, anatomically credible prehistoric dinosaur figurines on small stone pedestals, smooth carved surfaces with subtle skin and scale texture, soft directional natural-history-display lighting, scientifically inspired but stylized for chess-piece recognizability.
+Subject: an elegant Triceratops-queen on a circular stone pedestal, broad four-legged stance facing slightly forward-right, three signature horns on the head (one on the snout and two long ones above the eyes), large bony neck frill rising behind the head like a natural crown, a delicate jeweled tiara resting on the brow ridge between the eyes.
+Material — BLACK VARIANT: carved from POLISHED VOLCANIC OBSIDIAN. The ENTIRE figure must read as predominantly pitch BLACK at first glance, mainly black from horn tips to feet. Only very subtle dark-grey rim highlights for muscle and skin definition, plus sharp specular black highlights. NO white areas, NO light sections, NO bold colors. The piece is unmistakably BLACK.
+COLOR EMPHASIS: this is the BLACK side of the chess set — the user must immediately recognize it as a black piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: small stone pedestal base, dinosaur body filling the frame. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: dinosaurs/wR.png   —   Stegosaurus (light)
+──────────────────────────────────────────────────────────────────────
+High-end museum-quality natural-history sculpture style, anatomically credible prehistoric dinosaur figurines on small stone pedestals, smooth carved surfaces with subtle skin and scale texture, soft directional natural-history-display lighting, scientifically inspired but stylized for chess-piece recognizability.
+Subject: a stoic Stegosaurus-rook on a circular stone pedestal, four-legged side profile facing right, two staggered rows of large diamond-shaped bony back plates rising along the spine like castle battlements, four spike-tipped tail blades (thagomizer) at the rear, small head low to the ground.
+Material — WHITE VARIANT: carved from BLEACHED FOSSIL BONE. The ENTIRE figure must read as predominantly bright IVORY WHITE at first glance, mainly white from plates to feet. Only very subtle pale-beige shading for muscle and skin definition, plus tiny soft cool cream highlights. NO black areas, NO dark sections, NO bold colors. The piece is unmistakably WHITE.
+COLOR EMPHASIS: this is the WHITE side of the chess set — the user must immediately recognize it as a white piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: small stone pedestal base, dinosaur body filling the frame. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: dinosaurs/bR.png   —   Stegosaurus (dark)
+──────────────────────────────────────────────────────────────────────
+High-end museum-quality natural-history sculpture style, anatomically credible prehistoric dinosaur figurines on small stone pedestals, smooth carved surfaces with subtle skin and scale texture, soft directional natural-history-display lighting, scientifically inspired but stylized for chess-piece recognizability.
+Subject: a stoic Stegosaurus-rook on a circular stone pedestal, four-legged side profile facing right, two staggered rows of large diamond-shaped bony back plates rising along the spine like castle battlements, four spike-tipped tail blades (thagomizer) at the rear, small head low to the ground.
+Material — BLACK VARIANT: carved from POLISHED VOLCANIC OBSIDIAN. The ENTIRE figure must read as predominantly pitch BLACK at first glance, mainly black from plates to feet. Only very subtle dark-grey rim highlights for muscle and skin definition, plus sharp specular black highlights. NO white areas, NO light sections, NO bold colors. The piece is unmistakably BLACK.
+COLOR EMPHASIS: this is the BLACK side of the chess set — the user must immediately recognize it as a black piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: small stone pedestal base, dinosaur body filling the frame. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: dinosaurs/wB.png   —   Pteranodon (light)
+──────────────────────────────────────────────────────────────────────
+High-end museum-quality natural-history sculpture style, anatomically credible prehistoric dinosaur figurines on small stone pedestals, smooth carved surfaces with subtle skin and scale texture, soft directional natural-history-display lighting, scientifically inspired but stylized for chess-piece recognizability.
+Subject: a soaring Pteranodon-bishop on a small stone pedestal, slender pterosaur posed upright with both broad leathery wings spread wide and lifted upward like a bishop's mantle, long backward-pointing head crest, long pointed beak, slim hooked body, talons gripping the pedestal.
+Material — WHITE VARIANT: carved from BLEACHED FOSSIL BONE. The ENTIRE figure must read as predominantly bright IVORY WHITE at first glance, mainly white from wingtips to talons. Only very subtle pale-beige shading for membrane and skin definition, plus tiny soft cool cream highlights. NO black areas, NO dark sections, NO bold colors. The piece is unmistakably WHITE.
+COLOR EMPHASIS: this is the WHITE side of the chess set — the user must immediately recognize it as a white piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: small stone pedestal base, dinosaur body filling the frame. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: dinosaurs/bB.png   —   Pteranodon (dark)
+──────────────────────────────────────────────────────────────────────
+High-end museum-quality natural-history sculpture style, anatomically credible prehistoric dinosaur figurines on small stone pedestals, smooth carved surfaces with subtle skin and scale texture, soft directional natural-history-display lighting, scientifically inspired but stylized for chess-piece recognizability.
+Subject: a soaring Pteranodon-bishop on a small stone pedestal, slender pterosaur posed upright with both broad leathery wings spread wide and lifted upward like a bishop's mantle, long backward-pointing head crest, long pointed beak, slim hooked body, talons gripping the pedestal.
+Material — BLACK VARIANT: carved from POLISHED VOLCANIC OBSIDIAN. The ENTIRE figure must read as predominantly pitch BLACK at first glance, mainly black from wingtips to talons. Only very subtle dark-grey rim highlights for membrane and skin definition, plus sharp specular black highlights. NO white areas, NO light sections, NO bold colors. The piece is unmistakably BLACK.
+COLOR EMPHASIS: this is the BLACK side of the chess set — the user must immediately recognize it as a black piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: small stone pedestal base, dinosaur body filling the frame. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: dinosaurs/wN.png   —   Velociraptor (light)
+──────────────────────────────────────────────────────────────────────
+High-end museum-quality natural-history sculpture style, anatomically credible prehistoric dinosaur figurines on small stone pedestals, smooth carved surfaces with subtle skin and scale texture, soft directional natural-history-display lighting, scientifically inspired but stylized for chess-piece recognizability.
+Subject: a poised Velociraptor-knight on a circular stone pedestal, agile bipedal raptor in a leaping pose facing right, head turned alertly, one large sickle claw raised on the right foot, slender tail extended back for balance, sleek feathered crest along the head and neck.
+Material — WHITE VARIANT: carved from BLEACHED FOSSIL BONE. The ENTIRE figure must read as predominantly bright IVORY WHITE at first glance, mainly white from snout to tail tip. Only very subtle pale-beige shading for muscle and feather definition, plus tiny soft cool cream highlights. NO black areas, NO dark sections, NO bold colors. The piece is unmistakably WHITE.
+COLOR EMPHASIS: this is the WHITE side of the chess set — the user must immediately recognize it as a white piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: small stone pedestal base, dinosaur body filling the frame. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: dinosaurs/bN.png   —   Velociraptor (dark)
+──────────────────────────────────────────────────────────────────────
+High-end museum-quality natural-history sculpture style, anatomically credible prehistoric dinosaur figurines on small stone pedestals, smooth carved surfaces with subtle skin and scale texture, soft directional natural-history-display lighting, scientifically inspired but stylized for chess-piece recognizability.
+Subject: a poised Velociraptor-knight on a circular stone pedestal, agile bipedal raptor in a leaping pose facing right, head turned alertly, one large sickle claw raised on the right foot, slender tail extended back for balance, sleek feathered crest along the head and neck.
+Material — BLACK VARIANT: carved from POLISHED VOLCANIC OBSIDIAN. The ENTIRE figure must read as predominantly pitch BLACK at first glance, mainly black from snout to tail tip. Only very subtle dark-grey rim highlights for muscle and feather definition, plus sharp specular black highlights. NO white areas, NO light sections, NO bold colors. The piece is unmistakably BLACK.
+COLOR EMPHASIS: this is the BLACK side of the chess set — the user must immediately recognize it as a black piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: small stone pedestal base, dinosaur body filling the frame. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: dinosaurs/wP.png   —   Compsognathus Pawn (light)
+──────────────────────────────────────────────────────────────────────
+High-end museum-quality natural-history sculpture style, anatomically credible prehistoric dinosaur figurines on small stone pedestals, smooth carved surfaces with subtle skin and scale texture, soft directional natural-history-display lighting, scientifically inspired but stylized for chess-piece recognizability.
+Subject: a small Compsognathus-pawn on a circular stone pedestal, tiny bipedal dinosaur in an alert standing pose, small head with sharp little teeth, short forelimbs held at the chest, long balancing tail extending behind, simple modest proportions matching a pawn's status.
+Material — WHITE VARIANT: carved from BLEACHED FOSSIL BONE. The ENTIRE figure must read as predominantly bright IVORY WHITE at first glance, mainly white from snout to tail tip. Only very subtle pale-beige shading for muscle and skin definition, plus tiny soft cool cream highlights. NO black areas, NO dark sections, NO bold colors. The piece is unmistakably WHITE.
+COLOR EMPHASIS: this is the WHITE side of the chess set — the user must immediately recognize it as a white piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: small stone pedestal base, dinosaur body filling the frame. Same consistent style, scale, proportions and material finish across the whole set.
+
+──────────────────────────────────────────────────────────────────────
+FILE: dinosaurs/bP.png   —   Compsognathus Pawn (dark)
+──────────────────────────────────────────────────────────────────────
+High-end museum-quality natural-history sculpture style, anatomically credible prehistoric dinosaur figurines on small stone pedestals, smooth carved surfaces with subtle skin and scale texture, soft directional natural-history-display lighting, scientifically inspired but stylized for chess-piece recognizability.
+Subject: a small Compsognathus-pawn on a circular stone pedestal, tiny bipedal dinosaur in an alert standing pose, small head with sharp little teeth, short forelimbs held at the chest, long balancing tail extending behind, simple modest proportions matching a pawn's status.
+Material — BLACK VARIANT: carved from POLISHED VOLCANIC OBSIDIAN. The ENTIRE figure must read as predominantly pitch BLACK at first glance, mainly black from snout to tail tip. Only very subtle dark-grey rim highlights for muscle and skin definition, plus sharp specular black highlights. NO white areas, NO light sections, NO bold colors. The piece is unmistakably BLACK.
+COLOR EMPHASIS: this is the BLACK side of the chess set — the user must immediately recognize it as a black piece across the room.
+BACKGROUND: 100% FULLY TRANSPARENT PNG (alpha channel). Absolutely NO background — no color fill, no gradient, no ground shadow, no scene, no floor, no sky, no border, no text, no logo, no second piece. Only the chess piece is opaque; every other pixel must be transparent. If true transparency is unavailable, fall back to a solid flat magenta #FF00FF chroma-key background that can be removed.
+Single full chess piece, centered, slight 3/4 view, 1:1 square framing with about 10% transparent padding on all sides. Soft studio key light from upper left, gentle ambient fill, only on-figure self-shadow. Crisp silhouette readable at 64px: small stone pedestal base, dinosaur body filling the frame. Same consistent style, scale, proportions and material finish across the whole set.
 
 ================================================================================
                                       END
