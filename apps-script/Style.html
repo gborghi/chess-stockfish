@@ -613,6 +613,33 @@ html, body {
   min-height: 22px;
 }
 .momentum-glyphs[hidden] { display: none !important; }
+.scacco-nota {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 2px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #c83030, #9a1f1f);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  text-align: center;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.18);
+}
+.scacco-nota .scacco-plus {
+  font-size: 1.55rem;
+  line-height: 1;
+  font-weight: 800;
+}
+.scacco-nota.scacco-mate {
+  background: linear-gradient(180deg, #8b1212, #5c0a0a);
+  font-size: 1.1rem;
+}
+.scacco-nota[hidden] { display: none !important; }
 .apertura-nota,
 .archivio-nota,
 .chi-vince-nota {

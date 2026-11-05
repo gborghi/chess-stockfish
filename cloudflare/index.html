@@ -621,6 +621,33 @@ html, body {
   min-height: 22px;
 }
 .momentum-glyphs[hidden] { display: none !important; }
+.scacco-nota {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 2px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #c83030, #9a1f1f);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  text-align: center;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.18);
+}
+.scacco-nota .scacco-plus {
+  font-size: 1.55rem;
+  line-height: 1;
+  font-weight: 800;
+}
+.scacco-nota.scacco-mate {
+  background: linear-gradient(180deg, #8b1212, #5c0a0a);
+  font-size: 1.1rem;
+}
+.scacco-nota[hidden] { display: none !important; }
 .apertura-nota,
 .archivio-nota,
 .chi-vince-nota {
@@ -1519,6 +1546,7 @@ html, body {
         <div class="ctrl-group mb-0 d-md-none eval-meta-mobile">
           <div class="eval-meta" id="evalMetaMobile">
             <div id="momentumGlyphs" class="momentum-glyphs" aria-live="polite" hidden></div>
+            <div id="scaccoNota" class="scacco-nota" aria-live="assertive" hidden></div>
             <div id="aperturaNota" class="apertura-nota" hidden></div>
             <div id="chiVinceNota" class="chi-vince-nota" aria-live="polite" hidden></div>
             <div id="archivioNota" class="archivio-nota" hidden></div>
@@ -1583,6 +1611,7 @@ html, body {
           <div class="right-panel d-none d-md-flex">
             <div class="ctrl-group w-100 eval-meta" id="evalMetaRight">
               <div id="momentumGlyphsRight" class="momentum-glyphs" aria-live="polite" hidden></div>
+              <div id="scaccoNotaRight" class="scacco-nota" aria-live="assertive" hidden></div>
               <div id="aperturaNotaRight" class="apertura-nota" hidden></div>
               <div id="chiVinceNotaRight" class="chi-vince-nota" aria-live="polite" hidden></div>
               <div id="archivioNotaRight" class="archivio-nota" hidden></div>
@@ -3965,6 +3994,7 @@ function applyActiveOverlays() {
     $('#myBoard .square-' + hintSquares.to).addClass('hl-hint');
   }
   paintCheck();
+  paintScacco();
   syncAnimWeather();
 }
 
@@ -3988,6 +4018,47 @@ function paintCheck() {
       }
     }
   }
+}
+
+
+function paintScacco() {
+  var ch = null;
+  try { ch = viewChess(); } catch (e) { ch = null; }
+  var inCheck = false;
+  var mate = false;
+  if (ch) {
+    try { mate = ch.in_checkmate(); } catch (e2) { mate = false; }
+    try { inCheck = mate || ch.in_check(); } catch (e3) { inCheck = false; }
+  }
+  ['scaccoNota', 'scaccoNotaRight'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = '';
+    el.classList.remove('scacco-mate');
+    if (!inCheck) {
+      el.hidden = true;
+      return;
+    }
+    el.hidden = false;
+    if (mate) {
+      el.classList.add('scacco-mate');
+      var plusM = document.createElement('span');
+      plusM.className = 'scacco-plus';
+      plusM.textContent = '#';
+      var labM = document.createElement('span');
+      labM.textContent = 'Scacco matto!';
+      el.appendChild(plusM);
+      el.appendChild(labM);
+    } else {
+      var plus = document.createElement('span');
+      plus.className = 'scacco-plus';
+      plus.textContent = '+';
+      var lab = document.createElement('span');
+      lab.textContent = 'Scacco!';
+      el.appendChild(plus);
+      el.appendChild(lab);
+    }
+  });
 }
 
 function paintUnderAttack() {
@@ -4788,6 +4859,7 @@ function updateMoveList() {
   paintArchivio();
   paintApertura();
   paintChiVince();
+  paintScacco();
   var el = document.getElementById('moveList');
   if (el) el.scrollTop = el.scrollHeight;
 }

@@ -2287,6 +2287,7 @@ function applyActiveOverlays() {
     $('#myBoard .square-' + hintSquares.to).addClass('hl-hint');
   }
   paintCheck();
+  paintScacco();
   syncAnimWeather();
 }
 
@@ -2310,6 +2311,47 @@ function paintCheck() {
       }
     }
   }
+}
+
+
+function paintScacco() {
+  var ch = null;
+  try { ch = viewChess(); } catch (e) { ch = null; }
+  var inCheck = false;
+  var mate = false;
+  if (ch) {
+    try { mate = ch.in_checkmate(); } catch (e2) { mate = false; }
+    try { inCheck = mate || ch.in_check(); } catch (e3) { inCheck = false; }
+  }
+  ['scaccoNota', 'scaccoNotaRight'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = '';
+    el.classList.remove('scacco-mate');
+    if (!inCheck) {
+      el.hidden = true;
+      return;
+    }
+    el.hidden = false;
+    if (mate) {
+      el.classList.add('scacco-mate');
+      var plusM = document.createElement('span');
+      plusM.className = 'scacco-plus';
+      plusM.textContent = '#';
+      var labM = document.createElement('span');
+      labM.textContent = 'Scacco matto!';
+      el.appendChild(plusM);
+      el.appendChild(labM);
+    } else {
+      var plus = document.createElement('span');
+      plus.className = 'scacco-plus';
+      plus.textContent = '+';
+      var lab = document.createElement('span');
+      lab.textContent = 'Scacco!';
+      el.appendChild(plus);
+      el.appendChild(lab);
+    }
+  });
 }
 
 function paintUnderAttack() {
@@ -3110,6 +3152,7 @@ function updateMoveList() {
   paintArchivio();
   paintApertura();
   paintChiVince();
+  paintScacco();
   var el = document.getElementById('moveList');
   if (el) el.scrollTop = el.scrollHeight;
 }
