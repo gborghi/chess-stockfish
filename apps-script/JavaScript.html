@@ -103,6 +103,122 @@ function resolvePieceUrl(theme, pieceCode) {
   return pieceThemes['cburnett'].replace('{piece}', pieceCode);
 }
 
+// Custom HD PNG load: on failure show standard piece, retry with backoff + cache-bust.
+var PIECE_FALLBACK_THEME = 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/{piece}.svg';
+var _pieceImgRetry = Object.create(null);
+
+function pieceFallbackUrl(pieceCode) {
+  return PIECE_FALLBACK_THEME.replace('{piece}', pieceCode);
+}
+
+function isCustomHdUrl(url) {
+  return typeof url === 'string' && url.indexOf('/pieces/') !== -1 && /\.png(\?|$)/.test(url);
+}
+
+function cacheBustUrl(url, attempt) {
+  var base = url.split('?')[0];
+  return base + '?r=' + attempt + '_' + Date.now();
+}
+
+function schedulePieceImgRetry(img, originalUrl, pieceCode, attempt) {
+  if (attempt > 8) return;
+  var delay = Math.min(10000, Math.round(500 * Math.pow(2, Math.max(0, attempt - 1))));
+  // attempt 1: 0.5s, 2:1s, 3:2s, 4:4s, 5:8s, then cap 10s
+  var key = originalUrl.split('?')[0] + '|' + pieceCode;
+  _pieceImgRetry[key] = setTimeout(function() {
+    img.onerror = function() { onPieceImgError(img, originalUrl, pieceCode, attempt + 1); };
+    img.onload = function() {
+      img.onerror = null;
+      img.onload = null;
+      delete _pieceImgRetry[key];
+    };
+    img.src = cacheBustUrl(originalUrl, attempt + 1);
+  }, delay);
+}
+
+function onPieceImgError(img, originalUrl, pieceCode, attempt) {
+  attempt = attempt || 1;
+  // Placeholder: standard piece (never broken icon)
+  var fb = pieceFallbackUrl(pieceCode);
+  if (img.getAttribute('data-piece-fallback') !== '1') {
+    img.setAttribute('data-piece-fallback', '1');
+    img.src = fb;
+  }
+  schedulePieceImgRetry(img, originalUrl, pieceCode, attempt);
+}
+
+function bindPieceImgRetry(root) {
+  root = root || document;
+  var imgs = root.querySelectorAll ? root.querySelectorAll('img') : [];
+  for (var i = 0; i < imgs.length; i++) {
+    var img = imgs[i];
+    var src = img.getAttribute('src') || '';
+    if (!isCustomHdUrl(src)) continue;
+    if (img.getAttribute('data-piece-retry') === '1') continue;
+    img.setAttribute('data-piece-retry', '1');
+    (function(el, url) {
+      var pieceCode = (url.match(/\/([wb][KQRBNP])\.png/) || [])[1] || '';
+      el.onerror = function() { onPieceImgError(el, url.split('?')[0], pieceCode, 1); };
+    })(img, src);
+  }
+  // chessboard.js uses background-image on .piece-417db
+  var nodes = root.querySelectorAll ? root.querySelectorAll('.piece-417db') : [];
+  for (var j = 0; j < nodes.length; j++) {
+    var node = nodes[j];
+    if (node.getAttribute('data-piece-retry') === '1') continue;
+    var bg = (node.style && node.style.backgroundImage) || '';
+    var m = bg.match(/url\(["']?(.*?)["']?\)/);
+    if (!m || !isCustomHdUrl(m[1])) continue;
+    node.setAttribute('data-piece-retry', '1');
+    (function(el, url) {
+      var pieceCode = (url.match(/\/([wb][KQRBNP])\.png/) || [])[1] || '';
+      var probe = new Image();
+      probe.onload = function() { /* ok */ };
+      probe.onerror = function() {
+        // show fallback via background while retrying
+        el.style.backgroundImage = "url('" + pieceFallbackUrl(pieceCode) + "')";
+        var attempt = 1;
+        function retry() {
+          if (attempt > 8) return;
+          var delay = Math.min(10000, Math.round(500 * Math.pow(2, Math.max(0, attempt - 1))));
+          setTimeout(function() {
+            var bust = cacheBustUrl(url, attempt);
+            var img2 = new Image();
+            img2.onload = function() { el.style.backgroundImage = "url('" + bust + "')"; };
+            img2.onerror = function() { attempt++; retry(); };
+            img2.src = bust;
+          }, delay);
+        }
+        retry();
+      };
+      probe.src = url;
+    })(node, m[1]);
+  }
+}
+
+var _pieceRetryObserver = null;
+function startPieceImgRetryWatch() {
+  bindPieceImgRetry(document);
+  if (_pieceRetryObserver || typeof MutationObserver === 'undefined') return;
+  _pieceRetryObserver = new MutationObserver(function(muts) {
+    for (var i = 0; i < muts.length; i++) {
+      var m = muts[i];
+      if (m.type === 'childList') {
+        for (var j = 0; j < m.addedNodes.length; j++) {
+          var n = m.addedNodes[j];
+          if (n && n.nodeType === 1) bindPieceImgRetry(n);
+        }
+      } else if (m.type === 'attributes') {
+        bindPieceImgRetry(m.target.parentNode || document);
+      }
+    }
+  });
+  _pieceRetryObserver.observe(document.body, {
+    childList: true, subtree: true,
+    attributes: true, attributeFilter: ['style', 'src']
+  });
+}
+
 var isMobile = ('ontouchstart' in window) && window.innerWidth < 768;
 var selectedSquare = null;
 var lastMoveMark = null;
@@ -2270,13 +2386,13 @@ var pieceThemes = {
   'elven':       function(piece) { return buildSvgPiece('elven',  piece); },
   'orcish':      function(piece) { return buildSvgPiece('orcish', piece); },
   // ── HD PNG sets (Grok/Aurora generated) served via jsDelivr CDN ─────────
-  'fable_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/fable/{piece}.png',
-  'fable2_hd':    'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/fable2/{piece}.png',
-  'scifi_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@562cb4b/pieces/scifi_obsidian/{piece}.png',
-  'elven_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@562cb4b/pieces/elven_obsidian/{piece}.png',
-  'orcish_hd':    'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@562cb4b/pieces/orcish_obsidian/{piece}.png',
-  'fairytale_hd': 'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/fairytale/{piece}.png',
-  'dinosaurs_hd': 'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@562cb4b/pieces/dinosaurs_obsidian/{piece}.png'
+  'fable_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/fable_obsidian/{piece}.png',
+  'fable2_hd':    'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/fable2_obsidian/{piece}.png',
+  'scifi_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/scifi_obsidian/{piece}.png',
+  'elven_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/elven_obsidian/{piece}.png',
+  'orcish_hd':    'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/orcish_obsidian/{piece}.png',
+  'fairytale_hd': 'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/fairytale_obsidian/{piece}.png',
+  'dinosaurs_hd': 'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/dinosaurs_obsidian/{piece}.png'
 };
 var currentPieceTheme = pieceThemes['cburnett'];
 var currentPieceThemeBlack = pieceThemes['cburnett'];
@@ -3127,6 +3243,10 @@ function updateCapturedPieces() {
     blackHtml += '<img src="' + url + '" alt="">';
   });
   $('#blackCaptured, #blackCapturedRight').html(blackHtml);
+  bindPieceImgRetry(document.getElementById('whiteCaptured'));
+  bindPieceImgRetry(document.getElementById('whiteCapturedRight'));
+  bindPieceImgRetry(document.getElementById('blackCaptured'));
+  bindPieceImgRetry(document.getElementById('blackCapturedRight'));
 }
 
 function updateAdvantageBar(score) {
@@ -3434,6 +3554,7 @@ function resetGame() {
 
 function initBoard() {
   board = Chessboard('myBoard', boardOptions('start'));
+  startPieceImgRetryWatch();
 }
 
 function handleModeChange(mode) {

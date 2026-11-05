@@ -103,12 +103,152 @@ function resolvePieceUrl(theme, pieceCode) {
   return pieceThemes['cburnett'].replace('{piece}', pieceCode);
 }
 
+// Custom HD PNG load: on failure show standard piece, retry with backoff + cache-bust.
+var PIECE_FALLBACK_THEME = 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/{piece}.svg';
+var _pieceImgRetry = Object.create(null);
+
+function pieceFallbackUrl(pieceCode) {
+  return PIECE_FALLBACK_THEME.replace('{piece}', pieceCode);
+}
+
+function isCustomHdUrl(url) {
+  return typeof url === 'string' && url.indexOf('/pieces/') !== -1 && /\.png(\?|$)/.test(url);
+}
+
+function cacheBustUrl(url, attempt) {
+  var base = url.split('?')[0];
+  return base + '?r=' + attempt + '_' + Date.now();
+}
+
+function schedulePieceImgRetry(img, originalUrl, pieceCode, attempt) {
+  if (attempt > 8) return;
+  var delay = Math.min(10000, Math.round(500 * Math.pow(2, Math.max(0, attempt - 1))));
+  // attempt 1: 0.5s, 2:1s, 3:2s, 4:4s, 5:8s, then cap 10s
+  var key = originalUrl.split('?')[0] + '|' + pieceCode;
+  _pieceImgRetry[key] = setTimeout(function() {
+    img.onerror = function() { onPieceImgError(img, originalUrl, pieceCode, attempt + 1); };
+    img.onload = function() {
+      img.onerror = null;
+      img.onload = null;
+      delete _pieceImgRetry[key];
+    };
+    img.src = cacheBustUrl(originalUrl, attempt + 1);
+  }, delay);
+}
+
+function onPieceImgError(img, originalUrl, pieceCode, attempt) {
+  attempt = attempt || 1;
+  // Placeholder: standard piece (never broken icon)
+  var fb = pieceFallbackUrl(pieceCode);
+  if (img.getAttribute('data-piece-fallback') !== '1') {
+    img.setAttribute('data-piece-fallback', '1');
+    img.src = fb;
+  }
+  schedulePieceImgRetry(img, originalUrl, pieceCode, attempt);
+}
+
+function bindPieceImgRetry(root) {
+  root = root || document;
+  var imgs = root.querySelectorAll ? root.querySelectorAll('img') : [];
+  for (var i = 0; i < imgs.length; i++) {
+    var img = imgs[i];
+    var src = img.getAttribute('src') || '';
+    if (!isCustomHdUrl(src)) continue;
+    if (img.getAttribute('data-piece-retry') === '1') continue;
+    img.setAttribute('data-piece-retry', '1');
+    (function(el, url) {
+      var pieceCode = (url.match(/\/([wb][KQRBNP])\.png/) || [])[1] || '';
+      el.onerror = function() { onPieceImgError(el, url.split('?')[0], pieceCode, 1); };
+    })(img, src);
+  }
+  // chessboard.js uses background-image on .piece-417db
+  var nodes = root.querySelectorAll ? root.querySelectorAll('.piece-417db') : [];
+  for (var j = 0; j < nodes.length; j++) {
+    var node = nodes[j];
+    if (node.getAttribute('data-piece-retry') === '1') continue;
+    var bg = (node.style && node.style.backgroundImage) || '';
+    var m = bg.match(/url\(["']?(.*?)["']?\)/);
+    if (!m || !isCustomHdUrl(m[1])) continue;
+    node.setAttribute('data-piece-retry', '1');
+    (function(el, url) {
+      var pieceCode = (url.match(/\/([wb][KQRBNP])\.png/) || [])[1] || '';
+      var probe = new Image();
+      probe.onload = function() { /* ok */ };
+      probe.onerror = function() {
+        // show fallback via background while retrying
+        el.style.backgroundImage = "url('" + pieceFallbackUrl(pieceCode) + "')";
+        var attempt = 1;
+        function retry() {
+          if (attempt > 8) return;
+          var delay = Math.min(10000, Math.round(500 * Math.pow(2, Math.max(0, attempt - 1))));
+          setTimeout(function() {
+            var bust = cacheBustUrl(url, attempt);
+            var img2 = new Image();
+            img2.onload = function() { el.style.backgroundImage = "url('" + bust + "')"; };
+            img2.onerror = function() { attempt++; retry(); };
+            img2.src = bust;
+          }, delay);
+        }
+        retry();
+      };
+      probe.src = url;
+    })(node, m[1]);
+  }
+}
+
+var _pieceRetryObserver = null;
+function startPieceImgRetryWatch() {
+  bindPieceImgRetry(document);
+  if (_pieceRetryObserver || typeof MutationObserver === 'undefined') return;
+  _pieceRetryObserver = new MutationObserver(function(muts) {
+    for (var i = 0; i < muts.length; i++) {
+      var m = muts[i];
+      if (m.type === 'childList') {
+        for (var j = 0; j < m.addedNodes.length; j++) {
+          var n = m.addedNodes[j];
+          if (n && n.nodeType === 1) bindPieceImgRetry(n);
+        }
+      } else if (m.type === 'attributes') {
+        bindPieceImgRetry(m.target.parentNode || document);
+      }
+    }
+  });
+  _pieceRetryObserver.observe(document.body, {
+    childList: true, subtree: true,
+    attributes: true, attributeFilter: ['style', 'src']
+  });
+}
+
 var isMobile = ('ontouchstart' in window) && window.innerWidth < 768;
 var selectedSquare = null;
+var lastMoveMark = null;
+var inspectSquare = null;
+var showUnderAttack = false;
+var showEnPrise = false;
+var showLegal = false;
+var showControlled = false;
+var showInspect = false;
+var showSafeEmpty = false;
+var showAnimazioni = false;
+var showClassifica = false;
+var showArchivio = false;
+var showChiVince = false;
+var showAutoHint = false;
+var lastAperturaText = '';
+var glyphHold = false;
+var animAudioCtx = null;
+var animWeatherKey = '';
 var board = null;
 var game = new Chess();
 var stockfish = null;
 var stockfishReady = false;
+var hintStockfish = null;
+var hintStockfishReady = false;
+var hintSearchId = 0;
+var hintSearchInFlight = 0;
+var STOCKFISH_MAX_DEPTH = 30;
+var STOCKFISH_MAX_SKILL = 20;
+var HINT_ENGINE_BOOST = 2;
 var computerPlaysWhite = false;
 var computerPlaysBlack = true;
 var boardOrientation = 'white';
@@ -127,6 +267,2089 @@ var isPaused = true;
 var pausedFen = '';
 var pausedTurn = 'w';
 var timeoutId = null;
+var searchId = 0;
+var searchInFlight = 0;
+var searchKind = '';
+var awaitingStopBestmove = false;
+var pendingGo = null;
+var stopWaitTimer = null;
+var promotionPending = null;
+var hintOn = false;
+var hintSquares = null;
+var analysis = null;
+var coachHoldsComputer = false;
+var coachReplyPending = false;
+var reviewIndex = -1;
+var moveMarks = [];
+var glyphMarks = [];
+var searchScore = null;
+var searchFen = '';
+var chiVinceMates = {};
+var abandonedBy = null;
+var lastOpeningKey = '';
+var coachModel = null;
+var coachModelState = 'idle';
+var coachModelPromise = null;
+var coachModelTold = false;
+var coachModelBusy = false;
+var coachModelQueue = [];
+var reviewTail = null;
+
+function formatEvalLabel(scoreCp, mateN) {
+  if (mateN != null && mateN !== 0) {
+    var m = Math.abs(mateN);
+    return (mateN > 0 ? 'M' : '-M') + m;
+  }
+  if (scoreCp == null || isNaN(scoreCp)) return '0';
+  var pawns = scoreCp / 100;
+  if (Math.abs(pawns) < 0.05) return '0';
+  var sign = pawns > 0 ? '+' : '';
+  var t = Math.abs(pawns) >= 10 ? pawns.toFixed(0) : pawns.toFixed(1);
+  return sign + t;
+}
+
+function setEvalLabels(compact, verbose) {
+  $('#scoreTextRail').text(compact);
+  $('#scoreText, #scoreTextRight').text(verbose || compact);
+}
+
+function paintBars(whitePct) {
+  var w = whitePct;
+  if (w < 0) w = 0;
+  if (w > 100) w = 100;
+  var b = 100 - w;
+  $('#advantageBarWhite').css({width: w + '%', height: '100%', flex: '0 0 ' + w + '%'});
+  $('#advantageBarBlack').css({width: b + '%', height: '100%', flex: '0 0 ' + b + '%'});
+  $('#advantageBarWhiteRight').css({height: w + '%', width: '100%'});
+  $('#advantageBarBlackRight').css({height: b + '%', width: '100%'});
+}
+
+function paintMateBar(whiteMate) {
+  var whitePct = whiteMate > 0 ? 100 : (whiteMate < 0 ? 0 : 50);
+  paintBars(whitePct);
+  var compact = formatEvalLabel(null, whiteMate);
+  setEvalLabels(compact, 'matto in ' + Math.abs(whiteMate));
+}
+
+function postStop() {
+  if (!stockfish) return;
+  try { stockfish.postMessage('stop'); } catch (e) {}
+}
+
+function haltSearch() {
+  searchId++;
+  if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+  if (searchInFlight) {
+    searchInFlight = 0;
+    searchKind = '';
+    awaitingStopBestmove = true;
+    if (stopWaitTimer) clearTimeout(stopWaitTimer);
+    stopWaitTimer = setTimeout(function() {
+      stopWaitTimer = null;
+      if (!awaitingStopBestmove) return;
+      awaitingStopBestmove = false;
+      if (pendingGo) flushGo();
+    }, 400);
+  }
+  postStop();
+}
+
+function cancelSearch() {
+  pendingGo = null;
+  haltSearch();
+}
+
+function flushGo() {
+  if (!pendingGo || !stockfish) return;
+  var opts = pendingGo;
+  if (opts.kind === 'game' && (isPaused || isReplaying || isSetupMode || matchOver())) {
+    pendingGo = null;
+    return;
+  }
+  pendingGo = null;
+  searchId++;
+  searchInFlight = searchId;
+  searchKind = opts.kind;
+  searchScore = null;
+  searchFen = opts.fen || '';
+  stockfish.postMessage('position fen ' + opts.fen);
+  stockfish.postMessage('setoption name Skill Level value ' + opts.skill);
+  stockfish.postMessage('go depth ' + opts.depth);
+}
+
+function queueSearch(opts) {
+  haltSearch();
+  if (opts.kind === 'game' && (isPaused || isReplaying || isSetupMode || matchOver())) return;
+  pendingGo = opts;
+  if (!awaitingStopBestmove) flushGo();
+}
+
+function noteEngineInfo(line) {
+  if (!searchInFlight || searchInFlight !== searchId) return;
+  var mate = line.match(/score mate (-?\d+)/);
+  if (mate) {
+    var n = parseInt(mate[1], 10);
+    searchScore = {type: 'mate', value: n};
+    // upperbound/lowerbound non sono un matto esatto: non contarli.
+    if (line.indexOf('upperbound') === -1 && line.indexOf('lowerbound') === -1) {
+      rememberChiVinceMate(searchFen, n);
+      paintChiVinceFromMate();
+    }
+    if (searchKind === 'game') {
+      var shown = game.turn() === 'b' ? -n : n;
+      paintMateBar(shown);
+    }
+    return;
+  }
+  var cp = line.match(/score cp (-?\d+)/);
+  if (!cp) return;
+  var v = parseInt(cp[1], 10);
+  searchScore = {type: 'cp', value: v};
+  if (searchKind === 'game') {
+    if (game.turn() === 'b') v = -v;
+    updateAdvantageBar(v);
+  }
+}
+
+function onStockfishLine(line) {
+  console.log('Stockfish:', line);
+  if (line.indexOf('uciok') !== -1 || line.indexOf('readyok') !== -1) {
+    stockfishReady = true;
+    if (!abandonedBy) updateStatus('Stockfish pronto!', 'success');
+    if (line.indexOf('readyok') !== -1 && showChiVince) paintChiVince();
+  }
+  if (line.indexOf('score cp') !== -1 || line.indexOf('score mate') !== -1) noteEngineInfo(line);
+  if (line.indexOf('bestmove') !== 0) return;
+  if (awaitingStopBestmove && !searchInFlight) {
+    awaitingStopBestmove = false;
+    if (stopWaitTimer) { clearTimeout(stopWaitTimer); stopWaitTimer = null; }
+    if (pendingGo) flushGo();
+    else chiVinceEngineIdle();
+    return;
+  }
+  var id = searchInFlight;
+  var kind = searchKind;
+  var score = searchScore;
+  searchInFlight = 0;
+  searchKind = '';
+  if (!id || id !== searchId) return;
+  var match = line.match(/bestmove\s+(\S+)/);
+  var uci = match ? match[1] : '';
+  if (kind === 'game') {
+    if (!(isPaused || isReplaying || isSetupMode || abandonedBy)) applyEngineMove(uci);
+    chiVinceEngineIdle();
+    return;
+  }
+  if (kind === 'hint') {
+    showHint(uci);
+    chiVinceEngineIdle();
+    return;
+  }
+  if (kind === 'chiVince') {
+    chiVinceEngineIdle();
+    return;
+  }
+  if (kind === 'coach' || kind === 'review' || kind === 'glyph') {
+    onAnalysisBestmove(kind, uci, score);
+    chiVinceEngineIdle();
+  }
+}
+
+function boardOptions(position) {
+  return {
+    draggable: !isMobile,
+    position: position,
+    pieceTheme: buildPieceThemeFn(),
+    showNotation: true,
+    onDragStart: onDragStart,
+    onDrop: onDrop,
+    onSnapEnd: function() {
+      board.position(game.fen());
+      applyActiveOverlays();
+    },
+    orientation: boardOrientation
+  };
+}
+
+function matchOver() {
+  return game.game_over() || !!abandonedBy;
+}
+
+function abandonText() {
+  if (abandonedBy === 'w') return 'Il Bianco ha abbandonato.';
+  if (abandonedBy === 'b') return 'Il Nero ha abbandonato.';
+  return '';
+}
+
+function computerToMove() {
+  var turn = game.turn();
+  return (turn === 'w' && computerPlaysWhite) || (turn === 'b' && computerPlaysBlack);
+}
+
+function humanCanMove() {
+  if (matchOver() || isSetupMode) return false;
+  if (computerPlaysWhite && computerPlaysBlack) return false;
+  var turn = game.turn();
+  if (turn === 'w' && computerPlaysWhite) return false;
+  if (turn === 'b' && computerPlaysBlack) return false;
+  return true;
+}
+
+function endgameStatus() {
+  if (abandonedBy) return {text: abandonText(), type: 'danger'};
+  if (game.in_checkmate()) {
+    var winner = game.turn() === 'w' ? 'Nero' : 'Bianco';
+    return {text: 'Scaccomatto! ' + winner + ' vince', type: 'danger'};
+  }
+  if (game.in_draw()) return {text: 'Patta.', type: 'warning'};
+  if (game.game_over()) return {text: 'Partita finita.', type: 'danger'};
+  return null;
+}
+
+function statusAfterHumanMove() {
+  var over = endgameStatus();
+  if (over) {
+    updateStatus(over.text, over.type);
+    return;
+  }
+  if (computerToMove()) {
+    updateStatus('Tocca al computer...', 'info');
+    return;
+  }
+  updateStatus(game.turn() === 'w' ? 'Tocca al Bianco' : 'Tocca al Nero', 'info');
+}
+
+function noteCapture(move) {
+  if (!move || !move.captured) return;
+  if (move.color === 'w') blackCaptured.push(move.captured);
+  else whiteCaptured.push(move.captured);
+  updateCapturedPieces();
+  if (showAnimazioni) boomOn(capturedSquare(move));
+}
+
+function scheduleComputerAfterHuman() {
+  if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+  if (!matchOver() && computerToMove() && !isPaused && !isReplaying && !isSetupMode) {
+    timeoutId = setTimeout(makeComputerMove, 600);
+  }
+}
+
+function finishComputerMove(move, statusText, statusType, delay) {
+  clearHint(true);
+  recordMove(move.san);
+  board.position(game.fen());
+  selectedSquare = null;
+  lastMoveMark = {
+    from: move.from,
+    to: move.to,
+    cls: move.color === 'w' ? 'highlight-white' : 'highlight-black'
+  };
+  removeAllHighlights();
+  noteCapture(move);
+  updateGameResult();
+  noteOpponentReply(move, true);
+  var over = endgameStatus();
+  if (over) {
+    updateStatus(over.text, over.type);
+    holdForGlyph(move);
+    return;
+  }
+  updateStatus(statusText, statusType);
+  if (holdForGlyph(move)) return;
+  if (computerPlaysWhite && computerPlaysBlack && !abandonedBy && !isPaused && !isReplaying && !isSetupMode) {
+    timeoutId = setTimeout(makeComputerMove, delay);
+    return;
+  }
+  maybeAutoHint();
+}
+
+function applyEngineMove(uci) {
+  if (abandonedBy || isPaused || isReplaying || isSetupMode) return;
+  if (!uci || uci === '(none)') return;
+  var move = game.move(uci, {sloppy: true});
+  if (!move) return;
+  finishComputerMove(move, 'Computer ha mosso: ' + move.san, 'success', 800);
+}
+
+function needsPromotion(from, to) {
+  var piece = game.get(from);
+  if (!piece || piece.type !== 'p') return false;
+  var rank = to.charAt(1);
+  if (piece.color === 'w' && rank === '8') return true;
+  if (piece.color === 'b' && rank === '1') return true;
+  return false;
+}
+
+function promotionLegal(from, to) {
+  var ok = false;
+  var pieces = ['q', 'r', 'b', 'n'];
+  for (var i = 0; i < pieces.length; i++) {
+    var m = game.move({from: from, to: to, promotion: pieces[i]});
+    if (m) {
+      game.undo();
+      ok = true;
+      break;
+    }
+  }
+  return ok;
+}
+
+function showPromotionPicker(from, to) {
+  promotionPending = {from: from, to: to};
+  selectedSquare = from;
+  highlightSelectedAndMoves(from);
+  $('#promotionPicker').removeClass('d-none');
+  updateStatus('Scegli la promozione: Q, R, B o N.', 'warning');
+}
+
+function hidePromotionPicker() {
+  promotionPending = null;
+  $('#promotionPicker').addClass('d-none');
+}
+
+function choosePromotion(promo) {
+  var pending = promotionPending;
+  hidePromotionPicker();
+  if (!pending) return;
+  if (promo !== 'q' && promo !== 'r' && promo !== 'b' && promo !== 'n') return;
+  var move = game.move({from: pending.from, to: pending.to, promotion: promo});
+  if (!move) {
+    if (board) board.position(game.fen());
+    updateStatus('Promozione non valida.', 'danger');
+    return;
+  }
+  finishHumanMove(move);
+}
+
+function finishHumanMove(move) {
+  hidePromotionPicker();
+  clearHint(true);
+  recordMove(move.san);
+  selectedSquare = null;
+  lastMoveMark = {
+    from: move.from,
+    to: move.to,
+    cls: move.color === 'w' ? 'highlight-white' : 'highlight-black'
+  };
+  board.position(game.fen());
+  removeAllHighlights();
+  noteCapture(move);
+  updateGameResult();
+  statusAfterHumanMove();
+  noteOpponentReply(move, false);
+  if (coachPanelOpen() && stockfishReady && !isReplaying && !isSetupMode) {
+    coachHoldsComputer = true;
+    startCoachSingle(move);
+    return;
+  }
+  coachHoldsComputer = false;
+  if (holdForGlyph(move)) return;
+  scheduleComputerAfterHuman();
+}
+
+function clearHint(silent) {
+  hintOn = false;
+  hintSquares = null;
+  cancelHintSearch();
+  var btn = document.getElementById('mossaMiglioreBtn');
+  if (btn) {
+    btn.setAttribute('aria-pressed', 'false');
+    btn.textContent = 'Mossa migliore';
+  }
+  if (!silent && $('#myBoard .square-55d63').length) applyActiveOverlays();
+}
+
+function showHint(uci) {
+  if (!hintOn) return;
+  if (!uci || uci === '(none)' || uci.length < 4) {
+    clearHint(false);
+    updateStatus('Nessun suggerimento.', 'warning');
+    return;
+  }
+  hintSquares = {from: uci.slice(0, 2), to: uci.slice(2, 4)};
+  applyActiveOverlays();
+  updateStatus('Suggerimento: ' + hintSquares.from + '–' + hintSquares.to + '. Un altro click lo toglie.', 'success');
+}
+
+function opponentEngineSettings() {
+  // Skill/depth del computer avversario (slider primario = unico PC; in "entrambi" il più alto).
+  if (computerPlaysWhite && computerPlaysBlack) {
+    return {
+      depth: Math.max(strengthLevel || 0, strengthLevelBlack || 0),
+      skill: Math.max(skillLevel || 0, skillLevelBlack || 0)
+    };
+  }
+  return { depth: strengthLevel || 0, skill: skillLevel || 0 };
+}
+
+function hintEngineSettings() {
+  var opp = opponentEngineSettings();
+  var depth = Math.min(STOCKFISH_MAX_DEPTH, (opp.depth || 0) + HINT_ENGINE_BOOST);
+  var skill = Math.min(STOCKFISH_MAX_SKILL, (opp.skill || 0) + HINT_ENGINE_BOOST);
+  if (depth < 0) depth = 0;
+  if (skill < 0) skill = 0;
+  return { depth: depth, skill: skill };
+}
+
+function hintDepth() {
+  return hintEngineSettings().depth;
+}
+
+function cancelHintSearch() {
+  hintSearchId++;
+  hintSearchInFlight = 0;
+  if (hintStockfish) {
+    try { hintStockfish.postMessage('stop'); } catch (e) {}
+  }
+}
+
+function onHintStockfishLine(line) {
+  if (line.indexOf('uciok') !== -1 || line.indexOf('readyok') !== -1) {
+    hintStockfishReady = true;
+    return;
+  }
+  if (line.indexOf('bestmove') !== 0) return;
+  var id = hintSearchInFlight;
+  hintSearchInFlight = 0;
+  if (!id || id !== hintSearchId) return;
+  if (!hintOn) return;
+  var match = line.match(/bestmove\s+(\S+)/);
+  var uci = match ? match[1] : '';
+  showHint(uci);
+}
+
+function runHintSearch(fen) {
+  var opts = hintEngineSettings();
+  fen = fen || game.fen();
+  // Worker dedicato: non tocca skill/depth del motore di gioco.
+  if (hintStockfish && hintStockfishReady) {
+    hintSearchId++;
+    hintSearchInFlight = hintSearchId;
+    try {
+      hintStockfish.postMessage('position fen ' + fen);
+      hintStockfish.postMessage('setoption name Skill Level value ' + opts.skill);
+      hintStockfish.postMessage('go depth ' + opts.depth);
+    } catch (e) {
+      hintSearchInFlight = 0;
+    }
+    return opts;
+  }
+  // Fallback sull'istanza principale solo se il worker hint non è pronto.
+  if (stockfishReady) {
+    queueSearch({kind: 'hint', depth: opts.depth, skill: opts.skill, fen: fen});
+  }
+  return opts;
+}
+
+function maybeAutoHint() {
+  if (!showAutoHint) return;
+  if (!humanCanMove()) return;
+  if ((!stockfishReady && !hintStockfishReady) || isReplaying || isSetupMode || matchOver() || isPaused) return;
+  if (glyphHold || coachHoldsComputer) return;
+  if (analysis) return;
+  if (computerToMove()) return;
+  if (hintSearchInFlight) return;
+  if (searchInFlight && searchKind === 'hint') return;
+  hintOn = true;
+  var btn = document.getElementById('mossaMiglioreBtn');
+  if (btn) {
+    btn.setAttribute('aria-pressed', 'true');
+    btn.textContent = 'Nascondi suggerimento';
+  }
+  runHintSearch(game.fen());
+}
+
+function toggleHint() {
+  if (hintOn) {
+    clearHint(false);
+    cancelHintSearch();
+    if (searchKind === 'hint' || (searchInFlight && searchKind === 'hint')) cancelSearch();
+    if (!isPaused && !isReplaying && !isSetupMode) scheduleComputerAfterHuman();
+    return;
+  }
+  if ((!stockfishReady && !hintStockfishReady) || isReplaying || isSetupMode || matchOver()) {
+    updateStatus('Suggerimento non disponibile.', 'warning');
+    return;
+  }
+  abortAnalysis(false);
+  hintOn = true;
+  var btn = document.getElementById('mossaMiglioreBtn');
+  if (btn) {
+    btn.setAttribute('aria-pressed', 'true');
+    btn.textContent = 'Nascondi suggerimento';
+  }
+  var opts = hintEngineSettings();
+  updateStatus('Cerco la mossa migliore (skill ' + opts.skill + ', depth ' + opts.depth + ')...', 'info');
+  runHintSearch(game.fen());
+}
+
+function coachPanelOpen() {
+  var panel = document.getElementById('coachPanel');
+  return !!(panel && !panel.classList.contains('d-none'));
+}
+
+function appendCoach(text) {
+  var log = document.getElementById('coachLog');
+  if (!log) return;
+  var p = document.createElement('p');
+  p.textContent = text;
+  log.appendChild(p);
+  log.scrollTop = log.scrollHeight;
+}
+
+function abortAnalysis(resumeComputer) {
+  var held = coachHoldsComputer;
+  analysis = null;
+  coachHoldsComputer = false;
+  glyphHold = false;
+  reviewIndex = -1;
+  if (resumeComputer && held) scheduleComputerAfterHuman();
+}
+
+function scoreToCp(score) {
+  if (!score) return null;
+  if (score.type === 'mate') {
+    var n = score.value;
+    if (!n) return n > 0 ? 10000 : (n < 0 ? -10000 : 0);
+    var sign = n > 0 ? 1 : -1;
+    return sign * (10000 - Math.min(Math.abs(n), 50));
+  }
+  return score.value;
+}
+
+function lossCp(before, after) {
+  var b = scoreToCp(before);
+  var a = scoreToCp(after);
+  if (b == null || a == null) return null;
+  return b + a;
+}
+
+var GLYPHS = {
+  brilliant: { title: 'Brillante', svg: '<svg viewBox="0 0 18 18" aria-hidden="true"><path fill="#0e8a8a" d="M9 1 L10.6 7 L16.8 9 L10.6 11 L9 17 L7.4 11 L1.2 9 L7.4 7 Z"/><path fill="#efe6d2" d="M9 5.2 L9.7 8.1 L12.6 9 L9.7 9.9 L9 12.8 L8.3 9.9 L5.4 9 L8.3 8.1 Z"/></svg>' },
+  great: { title: 'Ottima', svg: '<svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="#2a5db0"/><path d="M5 8.2 L9 4.6 L13 8.2 M5 12.2 L9 8.6 L13 12.2" fill="none" stroke="#efe6d2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+  best: { title: 'Mossa migliore', svg: '<svg viewBox="0 0 18 18" aria-hidden="true"><path fill="#2f7d32" d="M9 1.2 L11.2 6.5 L16.8 7.1 L12.6 10.9 L13.8 16.5 L9 13.5 L4.2 16.5 L5.4 10.9 L1.2 7.1 L6.8 6.5 Z"/></svg>' },
+  excellent: { title: 'Eccellente', svg: '<svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="#5d9a45"/><path d="M5 9.3 L8 12.2 L13 6.1" fill="none" stroke="#efe6d2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+  good: { title: 'Buona', svg: '<svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="#b7c98a"/><circle cx="9" cy="9" r="3.1" fill="#2f4a22"/></svg>' },
+  inaccuracy: { title: 'Imprecisione', svg: '<svg viewBox="0 0 18 18" aria-hidden="true"><rect x="1.5" y="1.5" width="15" height="15" rx="2" fill="#c4a035"/><path d="M9 4.2 L9 10.2" stroke="#1e1a14" stroke-width="1.7" stroke-linecap="round"/><circle cx="9" cy="13.1" r="1.05" fill="#1e1a14"/></svg>' },
+  mistake: { title: 'Errore', svg: '<svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="#d4762c"/><path d="M9 4.4 L9 10" stroke="#1e1a14" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="13" r="1.1" fill="#1e1a14"/></svg>' },
+  blunder: { title: 'Grave errore', svg: '<svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="#b4232a"/><path d="M5.4 5.4 L12.6 12.6 M12.6 5.4 L5.4 12.6" stroke="#efe6d2" stroke-width="1.8" stroke-linecap="round"/></svg>' }
+};
+
+function pieceWorth(t) {
+  if (t === 'q') return 9;
+  if (t === 'r') return 5;
+  if (t === 'b' || t === 'n') return 3;
+  if (t === 'p') return 1;
+  return 0;
+}
+
+function isPieceSacrifice(move) {
+  if (!move || move.piece === 'p' || move.piece === 'k') return false;
+  return pieceWorth(move.piece) > (move.captured ? pieceWorth(move.captured) : 0);
+}
+
+function classFromLoss(loss, same, beforeScore, pack) {
+  if (loss == null) return '';
+  if (loss >= 300) return 'blunder';
+  if (loss >= 100) return 'mistake';
+  if (loss >= 50) return 'inaccuracy';
+  var before = scoreToCp(beforeScore);
+  var afterMover = before == null ? null : before - loss;
+  if (same && pack && isPieceSacrifice(pack.move) && before != null && before < 300 && afterMover > -200) return 'brilliant';
+  if (same && before != null && afterMover != null && ((before <= -200 && afterMover >= -50) || (before > -50 && before < 50 && afterMover >= 200))) return 'great';
+  if (same) return 'best';
+  if (loss <= 0) return 'excellent';
+  return 'good';
+}
+
+function noteGlyph(ctx, loss) {
+  if (!ctx || ctx.index == null || ctx.index < 0) return;
+  var pack = playOnFen(ctx.beforeFen, {
+    from: ctx.from,
+    to: ctx.to,
+    promotion: ctx.promotion,
+    san: ctx.san
+  });
+  var same = pack ? sameUci(pack.move, ctx.bestUci) : false;
+  glyphMarks[ctx.index] = classFromLoss(loss, same, ctx.scoreBefore, pack);
+  paintGlyphs();
+}
+
+var GLYPH_MARKS = {
+  brilliant: '!!',
+  great: '!!',
+  best: '!',
+  excellent: '!',
+  good: '',
+  inaccuracy: '?!',
+  mistake: '?',
+  blunder: '??'
+};
+
+function glyphNode(kind) {
+  var spec = GLYPHS[kind];
+  if (!spec) return null;
+  var wrap = document.createElement('span');
+  wrap.className = 'glyph-move-wrap';
+  wrap.style.display = 'inline-flex';
+  wrap.style.alignItems = 'center';
+  wrap.style.gap = '2px';
+  var el = document.createElement('span');
+  el.className = 'glyph-move';
+  el.title = spec.title;
+  el.setAttribute('role', 'img');
+  el.setAttribute('aria-label', spec.title);
+  el.innerHTML = spec.svg;
+  wrap.appendChild(el);
+  var mark = GLYPH_MARKS[kind] || '';
+  if (mark) {
+    var lab = document.createElement('span');
+    lab.className = 'glyph-move-label';
+    lab.textContent = mark;
+    lab.title = spec.title;
+    wrap.appendChild(lab);
+  }
+  return wrap;
+}
+
+function paintGlyphs() {
+  var ids = ['momentumGlyphs', 'momentumGlyphsRight'];
+  var idx = -1;
+  if (viewIndex > 0 && glyphMarks[viewIndex - 1]) idx = viewIndex - 1;
+  else {
+    for (var i = glyphMarks.length - 1; i >= 0; i--) {
+      if (glyphMarks[i]) { idx = i; break; }
+    }
+  }
+  ids.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el || (el.closest && el.closest('#myBoard'))) return;
+    el.textContent = '';
+    if (idx < 0) {
+      el.hidden = true;
+      return;
+    }
+    var node = glyphNode(glyphMarks[idx]);
+    if (!node) {
+      el.hidden = true;
+      return;
+    }
+    el.hidden = false;
+    el.appendChild(node);
+  });
+}
+
+function startGlyph(move) {
+  if (!stockfishReady || !move || isReplaying || isSetupMode) return false;
+  if (analysis && analysis.mode !== 'glyph') return false;
+  var index = viewIndex - 1;
+  if (index < 0 || !fenHistory[index]) return false;
+  analysis = {
+    mode: 'glyph',
+    phase: 'before',
+    beforeFen: fenHistory[index],
+    afterFen: fenHistory[index + 1] || game.fen(),
+    san: move.san,
+    from: move.from,
+    to: move.to,
+    promotion: move.promotion || '',
+    index: index,
+    scoreBefore: null,
+    bestUci: null
+  };
+  queueSearch({kind: 'glyph', depth: 8, skill: 20, fen: analysis.beforeFen});
+  return true;
+}
+
+function holdForGlyph(move) {
+  if (!stockfishReady || isReplaying || isSetupMode) return false;
+  glyphHold = true;
+  if (startGlyph(move)) return true;
+  glyphHold = false;
+  return false;
+}
+
+// Metrica aperture: identità della posizione (disposizione + tratto + arrocchi
+// + en passant solo se la presa è legale), non il nome della prima mossa.
+// Due ordini di mosse con la stessa chiave sono la stessa apertura.
+// Somiglianza, solo se non c'è identità, solo su partite e finali: materiale
+// identico; pedoni sulla stessa casa >= 80% di quelli del riferimento (o
+// entrambi senza pedoni); pezzi uguali sulla stessa casa / pezzi del
+// riferimento >= 0.75 e almeno 4. Sotto soglia non si scrive nulla.
+// Partita famosa solo se la metrica la aggancia, con nome e anno.
+// Ogni mossa: il libro è una mappa, l'archivio è piccolo.
+var archivioData = null;
+var archivioLoading = false;
+var archivioWaiters = [];
+
+function archivioKey(ch) {
+  var fen = ch.fen().split(' ');
+  var ep = '-';
+  if (fen[3] && fen[3] !== '-') {
+    var moves = ch.moves({verbose: true});
+    var i;
+    for (i = 0; i < moves.length; i++) {
+      if (moves[i].flags && String(moves[i].flags).indexOf('e') !== -1) {
+        ep = fen[3];
+        break;
+      }
+    }
+  }
+  return fen[0] + ' ' + fen[1] + ' ' + fen[2] + ' ' + ep;
+}
+
+function archivioPieces(key) {
+  var board = key.split(' ')[0];
+  var ranks = board.split('/');
+  var map = {};
+  var counts = {};
+  var pawns = [];
+  var occ = 0;
+  var r, file, i, ch, sq;
+  for (r = 0; r < ranks.length; r++) {
+    file = 0;
+    for (i = 0; i < ranks[r].length; i++) {
+      ch = ranks[r].charAt(i);
+      if (ch >= '1' && ch <= '8') { file += parseInt(ch, 10); continue; }
+      sq = String.fromCharCode(97 + file) + (8 - r);
+      map[sq] = ch;
+      counts[ch] = (counts[ch] || 0) + 1;
+      if (ch === 'P' || ch === 'p') pawns.push(ch + sq);
+      occ++;
+      file++;
+    }
+  }
+  return {map: map, counts: counts, pawns: pawns, occ: occ};
+}
+
+function archivioMaterialEqual(a, b) {
+  var seen = {};
+  var k;
+  for (k in a.counts) seen[k] = 1;
+  for (k in b.counts) seen[k] = 1;
+  for (k in seen) if ((a.counts[k] || 0) !== (b.counts[k] || 0)) return false;
+  return true;
+}
+
+function archivioPawnScore(query, ref) {
+  if (!query.pawns.length && !ref.pawns.length) return 1;
+  if (!query.pawns.length || !ref.pawns.length) return 0;
+  var have = {};
+  var i, hit = 0;
+  for (i = 0; i < query.pawns.length; i++) have[query.pawns[i]] = 1;
+  for (i = 0; i < ref.pawns.length; i++) if (have[ref.pawns[i]]) hit++;
+  return hit / ref.pawns.length;
+}
+
+function archivioSameSquares(query, ref) {
+  var n = 0;
+  var sq;
+  for (sq in ref.map) if (query.map[sq] === ref.map[sq]) n++;
+  return n;
+}
+
+function archivioResembles(query, ref) {
+  if (!archivioMaterialEqual(query, ref)) return false;
+  if (archivioPawnScore(query, ref) < 0.8) return false;
+  var same = archivioSameSquares(query, ref);
+  if (same < 4 || ref.occ <= 0) return false;
+  if (same / ref.occ < 0.75) return false;
+  return true;
+}
+
+function archivioLabel(ch) {
+  if (!archivioData || !ch) return '';
+  var key = archivioKey(ch);
+  if (archivioData.o && archivioData.o[key]) return 'Apertura: ' + archivioData.o[key];
+  var i, item, q, ref, ratio, best = '', bestRatio = 0;
+  var finals = archivioData.f || [];
+  var games = archivioData.g || [];
+  for (i = 0; i < finals.length; i++) {
+    if (finals[i].k === key) return 'Finale: ' + finals[i].n;
+  }
+  for (i = 0; i < games.length; i++) {
+    item = games[i];
+    if (item.k === key && item.n && item.y) return 'Somiglia a ' + item.n + ', ' + item.y;
+  }
+  q = archivioPieces(key);
+  for (i = 0; i < finals.length; i++) {
+    ref = archivioPieces(finals[i].k);
+    if (!archivioResembles(q, ref)) continue;
+    ratio = archivioSameSquares(q, ref) / ref.occ;
+    if (ratio > bestRatio) { bestRatio = ratio; best = 'Finale: ' + finals[i].n; }
+  }
+  for (i = 0; i < games.length; i++) {
+    item = games[i];
+    if (!item.n || !item.y) continue;
+    ref = archivioPieces(item.k);
+    if (!archivioResembles(q, ref)) continue;
+    ratio = archivioSameSquares(q, ref) / ref.occ;
+    if (ratio > bestRatio) { bestRatio = ratio; best = 'Somiglia a ' + item.n + ', ' + item.y; }
+  }
+  return best;
+}
+
+function archivioShow(text) {
+  ['archivioNota', 'archivioNotaRight'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el || (el.closest && el.closest('#myBoard'))) return;
+    el.textContent = text || '';
+    el.hidden = !text;
+  });
+}
+
+function paintApertura() {
+  var moves = (moveHistory || []).slice(0, viewIndex);
+  var text = '';
+  if (!moves.length) {
+    lastAperturaText = '';
+  } else {
+    try { text = openingFacts(moves) || ''; } catch (e) { text = ''; }
+    if (text) lastAperturaText = text;
+    else text = lastAperturaText;
+  }
+  ['aperturaNota', 'aperturaNotaRight'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text || '';
+    el.hidden = !text;
+  });
+}
+
+function ensureArchivio(done) {
+  if (archivioData) { done(); return; }
+  if (archivioLoading) { archivioWaiters.push(done); return; }
+  archivioLoading = true;
+  archivioWaiters = [done];
+  fetch('archivio.json').then(function(r) {
+    if (!r.ok) throw new Error('archivio');
+    return r.json();
+  }).then(function(data) {
+    archivioData = data || {o: {}, f: [], g: []};
+  }).catch(function() {
+    archivioData = {o: {}, f: [], g: []};
+  }).then(function() {
+    archivioLoading = false;
+    var ws = archivioWaiters;
+    archivioWaiters = [];
+    ws.forEach(function(fn) { try { fn(); } catch (e) {} });
+  });
+}
+
+function paintArchivio() {
+  if (!showArchivio) { archivioShow(''); return; }
+  ensureArchivio(function() {
+    if (!showArchivio) { archivioShow(''); return; }
+    var ch = null;
+    try { ch = viewChess(); } catch (e) { ch = null; }
+    archivioShow(ch ? archivioLabel(ch) : '');
+  });
+}
+
+// Tablebase Lichess, solo in rete, mai i file Syzygy. dtm è in semimosse
+// (il server lo chiama «mate in X half-moves» e cala di 1 a ogni ply).
+// «mate in N» di Lichess conta le mosse del vincitore: ceil(|dtm| / 2).
+// Stockfish UCI «score mate N» è già in mosse, non in semimosse: |N|, non /2.
+// Segno positivo: vince chi muove. upperbound/lowerbound non contano.
+var chiVinceGen = 0;
+var chiVinceFen = '';
+var chiVinceTbOk = '';
+var chiVinceTbMiss = '';
+var chiVinceTried = '';
+
+function pieceCountFen(fen) {
+  var placement = String(fen || '').split(' ')[0];
+  var n = 0;
+  var i, c;
+  for (i = 0; i < placement.length; i++) {
+    c = placement.charAt(i);
+    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) n++;
+  }
+  return n;
+}
+
+function chiVinceShow(text) {
+  ['chiVinceNota', 'chiVinceNotaRight'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el || (el.closest && el.closest('#myBoard'))) return;
+    el.textContent = text || '';
+    el.hidden = !text;
+  });
+}
+
+function chiVinceWinPhrase(whiteWins, mosse) {
+  if (!(mosse >= 1)) return '';
+  var who = whiteWins ? 'Il Bianco' : 'Il Nero';
+  return who + ' vince in ' + mosse + (mosse === 1 ? ' mossa' : ' mosse');
+}
+
+function chiVincePhrase(data, turn) {
+  if (!data || typeof data.category !== 'string') return '';
+  if (data.category === 'draw') return 'Patta';
+  if (data.category !== 'win' && data.category !== 'loss') return '';
+  if (typeof data.dtm !== 'number' || !isFinite(data.dtm)) return '';
+  var mosse = Math.ceil(Math.abs(data.dtm) / 2);
+  if (mosse < 1) return '';
+  var whiteWins = (data.category === 'win') === (turn === 'w');
+  return chiVinceWinPhrase(whiteWins, mosse);
+}
+
+function rememberChiVinceMate(fen, n) {
+  if (!fen || typeof n !== 'number' || !isFinite(n) || n === 0) return;
+  chiVinceMates[fen] = n;
+}
+
+function stockfishMatePhrase(fen) {
+  if (!fen || !Object.prototype.hasOwnProperty.call(chiVinceMates, fen)) return '';
+  var n = chiVinceMates[fen];
+  if (typeof n !== 'number' || !isFinite(n) || n === 0) return '';
+  var mosse = Math.abs(n);
+  var turn = String(fen).split(' ')[1];
+  var whiteWins = (n > 0) === (turn === 'w');
+  return chiVinceWinPhrase(whiteWins, mosse);
+}
+
+function chiVinceFallbackOpen(fen) {
+  if (!fen || !showChiVince) return false;
+  if (chiVinceTbOk === fen) return false;
+  if (pieceCountFen(fen) > 7) return true;
+  return chiVinceTbMiss === fen;
+}
+
+function paintChiVinceFromMate() {
+  if (!searchFen || !chiVinceFallbackOpen(searchFen)) return;
+  var fen = '';
+  try { fen = viewChess().fen(); } catch (e) { fen = ''; }
+  if (fen !== searchFen) return;
+  var phrase = stockfishMatePhrase(fen);
+  if (phrase) chiVinceShow(phrase);
+}
+
+function maybeSearchChiVince(fen) {
+  if (!showChiVince || !fen || !stockfish || !stockfishReady || isSetupMode) return;
+  if (Object.prototype.hasOwnProperty.call(chiVinceMates, fen)) return;
+  if (searchInFlight || pendingGo || awaitingStopBestmove) return;
+  if (chiVinceTried === fen) return;
+  if (!isPaused && !isReplaying && computerToMove() && !matchOver()) return;
+  var ch = null;
+  try { ch = viewChess(); } catch (e) { ch = null; }
+  if (!ch || ch.fen() !== fen) return;
+  if (ch.game_over && ch.game_over()) return;
+  chiVinceTried = fen;
+  queueSearch({kind: 'chiVince', depth: 16, skill: 20, fen: fen});
+}
+
+function showStockfishOrSearch(fen) {
+  var phrase = stockfishMatePhrase(fen);
+  chiVinceShow(phrase);
+  if (!phrase) maybeSearchChiVince(fen);
+}
+
+function chiVinceEngineIdle() {
+  if (!showChiVince) return;
+  var fen = '';
+  try { fen = viewChess().fen(); } catch (e) { fen = ''; }
+  if (!fen || !chiVinceFallbackOpen(fen)) return;
+  var phrase = stockfishMatePhrase(fen);
+  if (phrase) chiVinceShow(phrase);
+  else maybeSearchChiVince(fen);
+}
+
+function stopStaleChiVinceSearch(fen) {
+  var stale = (searchKind === 'chiVince' && searchFen && searchFen !== fen) ||
+    (pendingGo && pendingGo.kind === 'chiVince' && pendingGo.fen !== fen);
+  if (!stale) return;
+  if (searchFen && !Object.prototype.hasOwnProperty.call(chiVinceMates, searchFen)) chiVinceTried = '';
+  cancelSearch();
+}
+
+function paintChiVince() {
+  if (!showChiVince) {
+    chiVinceGen++;
+    chiVinceFen = '';
+    chiVinceTbOk = '';
+    chiVinceTbMiss = '';
+    chiVinceTried = '';
+    chiVinceShow('');
+    if (searchKind === 'chiVince' || (pendingGo && pendingGo.kind === 'chiVince')) cancelSearch();
+    return;
+  }
+  var ch = null;
+  try { ch = viewChess(); } catch (e) { ch = null; }
+  var fen = ch ? ch.fen() : '';
+  if (!fen) {
+    chiVinceGen++;
+    chiVinceFen = '';
+    chiVinceTbOk = '';
+    chiVinceTbMiss = '';
+    chiVinceShow('');
+    return;
+  }
+  stopStaleChiVinceSearch(fen);
+  if (pieceCountFen(fen) > 7) {
+    chiVinceGen++;
+    chiVinceTbOk = '';
+    chiVinceTbMiss = '';
+    chiVinceFen = fen;
+    showStockfishOrSearch(fen);
+    return;
+  }
+  if (fen === chiVinceFen) {
+    if (chiVinceTbOk === fen) return;
+    if (chiVinceTbMiss === fen) showStockfishOrSearch(fen);
+    return;
+  }
+  chiVinceFen = fen;
+  chiVinceTbOk = '';
+  chiVinceTbMiss = '';
+  var gen = ++chiVinceGen;
+  var turn = fen.split(' ')[1];
+  chiVinceShow('');
+  fetch('https://tablebase.lichess.ovh/standard?fen=' + encodeURIComponent(fen)).then(function(r) {
+    if (!r.ok) throw new Error('tablebase');
+    return r.json();
+  }).then(function(data) {
+    if (gen !== chiVinceGen || !showChiVince || chiVinceFen !== fen) return;
+    var phrase = chiVincePhrase(data, turn);
+    if (phrase) {
+      chiVinceTbOk = fen;
+      chiVinceShow(phrase);
+      return;
+    }
+    chiVinceTbMiss = fen;
+    showStockfishOrSearch(fen);
+  }).catch(function() {
+    if (gen !== chiVinceGen || chiVinceFen !== fen || !showChiVince) return;
+    chiVinceTbMiss = fen;
+    showStockfishOrSearch(fen);
+  });
+}
+
+
+function releaseGlyphHold() {
+  if (!glyphHold) return;
+  glyphHold = false;
+  scheduleComputerAfterHuman();
+  maybeAutoHint();
+}
+
+function isLightSquare(square) {
+  var file = square.charCodeAt(0) - 97;
+  var rank = parseInt(square.charAt(1), 10);
+  return ((file + rank) % 2) === 0;
+}
+
+function viewerPos(square) {
+  var file = square.charCodeAt(0) - 97;
+  var rank = parseInt(square.charAt(1), 10);
+  if (boardOrientation === 'black') return { left: 7 - file, bottom: 8 - rank };
+  return { left: file, bottom: rank - 1 };
+}
+
+function squaresOfType(ch, type, color) {
+  var out = [];
+  var files = 'abcdefgh';
+  for (var f = 0; f < 8; f++) {
+    for (var r = 1; r <= 8; r++) {
+      var sq = files.charAt(f) + r;
+      var p = ch.get(sq);
+      if (p && p.type === type && p.color === color) out.push(sq);
+    }
+  }
+  return out;
+}
+
+function pieceAdvancement(square, color) {
+  var rank = parseInt(square.charAt(1), 10);
+  return color === 'w' ? rank : (9 - rank);
+}
+
+function uniquelyAdvanced(square, mates, color) {
+  if (mates.length < 2) return false;
+  var mine = pieceAdvancement(square, color);
+  for (var i = 0; i < mates.length; i++) {
+    if (mates[i] === square) continue;
+    if (pieceAdvancement(mates[i], color) >= mine) return false;
+  }
+  return true;
+}
+
+function uniqueVisual(square, mates) {
+  if (mates.length < 2) return '';
+  var positions = [];
+  for (var i = 0; i < mates.length; i++) positions.push({ sq: mates[i], pos: viewerPos(mates[i]) });
+  var me = viewerPos(square);
+  var maxB = positions[0].pos.bottom, minB = maxB, maxL = positions[0].pos.left, minL = maxL;
+  for (var j = 1; j < positions.length; j++) {
+    if (positions[j].pos.bottom > maxB) maxB = positions[j].pos.bottom;
+    if (positions[j].pos.bottom < minB) minB = positions[j].pos.bottom;
+    if (positions[j].pos.left > maxL) maxL = positions[j].pos.left;
+    if (positions[j].pos.left < minL) minL = positions[j].pos.left;
+  }
+  function only(pred) {
+    var n = 0, hit = false;
+    for (var k = 0; k < positions.length; k++) {
+      if (!pred(positions[k])) continue;
+      n++;
+      if (positions[k].sq === square) hit = true;
+    }
+    return n === 1 && hit;
+  }
+  var top = me.bottom === maxB && maxB !== minB;
+  var bottom = me.bottom === minB && maxB !== minB;
+  var left = me.left === minL && maxL !== minL;
+  var right = me.left === maxL && maxL !== minL;
+  if (top && left && only(function(p) { return p.pos.bottom === maxB && p.pos.left === minL; })) return 'in alto a sinistra';
+  if (top && right && only(function(p) { return p.pos.bottom === maxB && p.pos.left === maxL; })) return 'in alto a destra';
+  if (bottom && left && only(function(p) { return p.pos.bottom === minB && p.pos.left === minL; })) return 'in basso a sinistra';
+  if (bottom && right && only(function(p) { return p.pos.bottom === minB && p.pos.left === maxL; })) return 'in basso a destra';
+  if (top && only(function(p) { return p.pos.bottom === maxB; })) return 'in alto';
+  if (bottom && only(function(p) { return p.pos.bottom === minB; })) return 'in basso';
+  if (left && only(function(p) { return p.pos.left === minL; })) return 'a sinistra';
+  if (right && only(function(p) { return p.pos.left === maxL; })) return 'a destra';
+  return '';
+}
+
+function onBackRank(square, color) {
+  return (color === 'w' && square.charAt(1) === '1') || (color === 'b' && square.charAt(1) === '8');
+}
+
+function backRankDistinguishes(square, mates, color) {
+  if (!onBackRank(square, color) || mates.length < 2) return false;
+  for (var i = 0; i < mates.length; i++) if (!onBackRank(mates[i], color)) return true;
+  return false;
+}
+
+function pieceNoun(type, yours) {
+  var fem = type === 'r' || type === 'q';
+  var name = { p: 'pedone', n: 'cavallo', b: 'alfiere', r: 'torre', q: 'donna', k: 're' }[type] || 'pezzo';
+  if (yours) return fem ? 'la tua ' + name : 'il tuo ' + name;
+  if (type === 'b') return "l'alfiere";
+  if (fem) return 'la ' + name;
+  return 'il ' + name;
+}
+
+function describePieceAt(ch, square, yours) {
+  var p = ch.get(square);
+  if (!p) return 'il pezzo';
+  var mates = squaresOfType(ch, p.type, p.color);
+  var trait = '';
+  if (p.type !== 'k') {
+    if (uniquelyAdvanced(square, mates, p.color)) trait = 'avanzato';
+    else if (backRankDistinguishes(square, mates, p.color)) trait = 'base';
+    else trait = uniqueVisual(square, mates);
+  }
+  var head = pieceNoun(p.type, yours);
+  var adv = (p.type === 'r' || p.type === 'q') ? 'più avanzata' : 'più avanzato';
+  if (p.type === 'b') {
+    var col = isLightSquare(square) ? 'bianche' : 'nere';
+    if (trait === 'avanzato') return head + ' ' + adv + ' sulle case ' + col;
+    if (trait === 'base') return head + ' sulla fila di base, sulle case ' + col;
+    if (trait) return head + ' che sta ' + trait + ', sulle case ' + col;
+    return head + ' sulle case ' + col;
+  }
+  if (trait === 'avanzato') return head + ' ' + adv;
+  if (trait === 'base') return head + ' sulla fila di base';
+  if (trait) return head + ' che sta ' + trait;
+  return head;
+}
+
+function italianSan(san) {
+  if (!san) return '';
+  var body = String(san).replace(/[+#]$/, '');
+  return body.replace(/N/g, 'C').replace(/B/g, 'A').replace(/Q/g, 'D').replace(/R/g, 'T').replace(/K/g, 'R');
+}
+
+function glossPlayed(beforeFen, move, yours) {
+  if (!move) return '';
+  var symbol = italianSan(move.san);
+  if (move.flags && move.flags.indexOf('k') !== -1) return symbol + ' (arrocco corto)';
+  if (move.flags && move.flags.indexOf('q') !== -1) return symbol + ' (arrocco lungo)';
+  var desc;
+  if (move.promotion) {
+    var pn = { q: 'donna', r: 'torre', b: 'alfiere', n: 'cavallo' }[move.promotion] || 'pezzo';
+    desc = (yours ? 'il tuo pedone' : 'il pedone') + ' promosso a ' + pn + ', in ' + move.to;
+  } else {
+    var before = new Chess(beforeFen);
+    var after = new Chess(beforeFen);
+    var played = after.move({ from: move.from, to: move.to, promotion: move.promotion });
+    var bare = pieceNoun(move.piece, yours);
+    var afterDesc = played ? describePieceAt(after, move.to, yours) : '';
+    var beforeDesc = describePieceAt(before, move.from, yours);
+    var afterRole = afterDesc.indexOf('più avanzat') !== -1 || afterDesc.indexOf('fila di base') !== -1 || afterDesc.indexOf('case ') !== -1 || afterDesc.indexOf('che sta') !== -1;
+    if (afterRole) desc = afterDesc + ', in ' + move.to;
+    else if (beforeDesc && beforeDesc !== bare) desc = beforeDesc + ', che arriva in ' + move.to;
+    else desc = (beforeDesc || bare) + ', in ' + move.to;
+  }
+  return symbol + ' (' + desc + ')';
+}
+
+function joinItalian(bits) {
+  if (!bits.length) return '';
+  if (bits.length === 1) return bits[0];
+  var last = bits[bits.length - 1];
+  var conj = /^e/i.test(last) ? ' ed ' : ' e ';
+  return bits.slice(0, -1).join(', ') + conj + last;
+}
+
+function joinSquares(sqs) {
+  return joinItalian(sqs);
+}
+
+function targetsPhrase(list) {
+  var order = ['p', 'n', 'b', 'r', 'q'];
+  var by = {};
+  list.forEach(function(item) {
+    if (!by[item.type]) by[item.type] = [];
+    by[item.type].push(item.square);
+  });
+  var bits = [];
+  order.forEach(function(t) {
+    if (!by[t]) return;
+    var sqs = by[t];
+    if (t === 'b') {
+      sqs.forEach(function(sq) {
+        var col = isLightSquare(sq) ? 'bianche' : 'nere';
+        bits.push("l'alfiere in " + sq + ' (sulle case ' + col + ')');
+      });
+      return;
+    }
+    var one = { p: 'il pedone', n: 'il cavallo', r: 'la torre', q: 'la donna', k: 'il re' }[t];
+    var many = { p: 'i pedoni', n: 'i cavalli', r: 'le torri', q: 'le donne', k: 'i re' }[t];
+    if (sqs.length === 1) bits.push(one + ' in ' + sqs[0]);
+    else bits.push(many + ' in ' + joinSquares(sqs));
+  });
+  return joinItalian(bits);
+}
+
+function captureInfo(move) {
+  if (!move || !move.captured) return null;
+  var sq = move.to;
+  if (move.flags && move.flags.indexOf('e') !== -1) {
+    sq = move.to.charAt(0) + (move.color === 'w' ? '5' : '4');
+  }
+  return { type: move.captured, square: sq };
+}
+
+function attacksAfter(beforeFen, move) {
+  var ch = new Chess(beforeFen);
+  var played = ch.move({ from: move.from, to: move.to, promotion: move.promotion });
+  if (!played) return [];
+  var parts = ch.fen().split(' ');
+  parts[1] = played.color;
+  parts[3] = '-';
+  var temp;
+  try { temp = new Chess(parts.join(' ')); } catch (e) { return []; }
+  var squares = [played.to];
+  if (played.flags && played.flags.indexOf('k') !== -1) squares.push(played.color === 'w' ? 'f1' : 'f8');
+  if (played.flags && played.flags.indexOf('q') !== -1) squares.push(played.color === 'w' ? 'd1' : 'd8');
+  var out = [];
+  var seen = {};
+  squares.forEach(function(sq) {
+    var list = [];
+    try { list = temp.moves({ square: sq, verbose: true }) || []; } catch (e2) { list = []; }
+    list.forEach(function(m) {
+      if (!m.captured || m.captured === 'k' || seen[m.to]) return;
+      seen[m.to] = true;
+      out.push({ type: m.captured, square: m.to });
+    });
+  });
+  return out;
+}
+
+function playOnFen(fen, spec) {
+  var ch = new Chess(fen);
+  var move = null;
+  try {
+    if (spec.uci) {
+      var uci = String(spec.uci);
+      move = ch.move(uci, { sloppy: true });
+      if (!move && uci.length >= 4) {
+        ch = new Chess(fen);
+        var obj = { from: uci.slice(0, 2), to: uci.slice(2, 4) };
+        if (uci.length > 4) obj.promotion = uci.charAt(4).toLowerCase();
+        move = ch.move(obj);
+      }
+    } else if (spec.from && spec.to) {
+      var obj2 = { from: spec.from, to: spec.to };
+      if (spec.promotion) obj2.promotion = spec.promotion;
+      move = ch.move(obj2);
+      if (!move && spec.san) {
+        ch = new Chess(fen);
+        move = ch.move(spec.san) || ch.move(spec.san, { sloppy: true });
+      }
+    } else if (spec.san) {
+      move = ch.move(spec.san) || ch.move(spec.san, { sloppy: true });
+    }
+  } catch (e) { move = null; }
+  if (!move) return null;
+  return { beforeFen: fen, move: move, after: ch };
+}
+
+function inspectPlayed(pack) {
+  return {
+    pack: pack,
+    capture: captureInfo(pack.move),
+    attacks: attacksAfter(pack.beforeFen, pack.move),
+    check: pack.after.in_check(),
+    mate: pack.after.in_checkmate()
+  };
+}
+
+function sameUci(move, uci) {
+  if (!move || !uci || uci === '(none)' || uci.length < 4) return false;
+  if (uci.slice(0, 2) !== move.from || uci.slice(2, 4) !== move.to) return false;
+  var promo = (move.promotion || '').toLowerCase();
+  var bpromo = uci.length > 4 ? uci.charAt(4).toLowerCase() : '';
+  return promo === bpromo;
+}
+
+function sideName(color, cap) {
+  var n = color === 'w' ? 'Bianco' : 'Nero';
+  return cap ? 'Il ' + n : 'il ' + n;
+}
+
+function sameLine(lead, info, yours) {
+  var att = info.attacks.filter(function(a) { return a.type !== 'k'; });
+  var text = lead;
+  var verb = yours ? 'attacchi ' : 'attacca ';
+  if (info.capture && att.length) text += ', catturando ' + targetsPhrase([info.capture]) + ', e ' + verb + targetsPhrase(att);
+  else if (info.capture) text += ', catturando ' + targetsPhrase([info.capture]);
+  else if (att.length) text += ' e ' + verb + targetsPhrase(att);
+  if (info.mate) text += ' e ' + (yours ? 'hai dato scacco matto' : 'ha dato scacco matto');
+  else if (info.check) text += ' e ' + (yours ? 'hai dato scacco' : 'ha dato scacco');
+  return text + '.';
+}
+
+function playedTail(info, yours) {
+  var cap = info.capture ? 'catturando ' + targetsPhrase([info.capture]) : '';
+  var chk = '';
+  if (info.mate) chk = yours ? 'hai dato scacco matto' : 'ha dato scacco matto';
+  else if (info.check) chk = yours ? 'hai dato scacco' : 'ha dato scacco';
+  if (cap && chk) return ', ' + cap + ', e ' + chk;
+  if (cap) return ', ' + cap;
+  if (chk) return ' e ' + chk;
+  return '';
+}
+
+function consequence(best, played) {
+  var touched = {};
+  played.attacks.forEach(function(a) { touched[a.square] = true; });
+  if (played.capture) touched[played.capture.square] = true;
+  var verbs = [];
+  if (best.capture && (!played.capture || played.capture.square !== best.capture.square)) {
+    verbs.push('catturato ' + targetsPhrase([best.capture]));
+  }
+  var extra = best.attacks.filter(function(a) {
+    if (touched[a.square]) return false;
+    if (best.capture && a.square === best.capture.square) return false;
+    return true;
+  });
+  if (extra.length) verbs.push('attaccato ' + targetsPhrase(extra));
+  if (best.mate && !played.mate) verbs.push('dato scacco matto');
+  else if (best.check && !played.check && !(best.mate && !played.mate)) verbs.push('dato scacco');
+  return verbs;
+}
+
+function coachVoice(color) {
+  if (computerPlaysWhite && computerPlaysBlack) return 'side';
+  if (color === humanColor) return 'tu';
+  return 'side';
+}
+
+var OPENINGS = [
+  { id: 'due-cavalli', name: 'difesa dei due cavalli', phrase: 'la difesa dei due cavalli', side: 'b', san: ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4', 'Nf6'], uci: ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4', 'g8f6'] },
+  { id: 'quattro-cavalli', name: 'quattro cavalli', phrase: 'i quattro cavalli', side: 'both', san: ['e4', 'e5', 'Nf3', 'Nc6', 'Nc3', 'Nf6'], uci: ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'b1c3', 'g8f6'] },
+  { id: 'indiana-donna', name: 'indiana di donna', phrase: "l'indiana di donna", side: 'b', san: ['d4', 'Nf6', 'c4', 'e6', 'Nf3', 'b6'], uci: ['d2d4', 'g8f6', 'c2c4', 'e7e6', 'g1f3', 'b7b6'] },
+  { id: 'italiana', name: 'italiana', phrase: "l'italiana", side: 'w', san: ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4'], uci: ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4'] },
+  { id: 'spagnola', name: 'spagnola', phrase: 'la spagnola', side: 'w', san: ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5'], uci: ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1b5'] },
+  { id: 'siciliana-najdorf', name: 'siciliana Najdorf', phrase: 'la siciliana Najdorf', side: 'b', san: ['e4', 'c5', 'Nf3', 'd6', 'd4', 'cxd4', 'Nxd4', 'Nf6', 'Nc3', 'a6'], uci: ['e2e4', 'c7c5', 'g1f3', 'd7d6', 'd2d4', 'c5d4', 'f3d4', 'g8f6', 'b1c3', 'a7a6'] },
+  { id: 'siciliana-dragone', name: 'siciliana Dragone', phrase: 'la siciliana Dragone', side: 'b', san: ['e4', 'c5', 'Nf3', 'd6', 'd4', 'cxd4', 'Nxd4', 'Nf6', 'Nc3', 'g6'], uci: ['e2e4', 'c7c5', 'g1f3', 'd7d6', 'd2d4', 'c5d4', 'f3d4', 'g8f6', 'b1c3', 'g7g6'] },
+  { id: 'siciliana-classica', name: 'siciliana classica', phrase: 'la siciliana classica', side: 'b', san: ['e4', 'c5', 'Nf3', 'd6', 'd4', 'cxd4', 'Nxd4', 'Nf6', 'Nc3', 'Nc6'], uci: ['e2e4', 'c7c5', 'g1f3', 'd7d6', 'd2d4', 'c5d4', 'f3d4', 'g8f6', 'b1c3', 'b8c6'] },
+  { id: 'siciliana-scheveningen', name: 'siciliana Scheveningen', phrase: 'la siciliana Scheveningen', side: 'b', san: ['e4', 'c5', 'Nf3', 'd6', 'd4', 'cxd4', 'Nxd4', 'Nf6', 'Nc3', 'e6'], uci: ['e2e4', 'c7c5', 'g1f3', 'd7d6', 'd2d4', 'c5d4', 'f3d4', 'g8f6', 'b1c3', 'e7e6'] },
+  { id: 'siciliana-aperta', name: 'siciliana aperta', phrase: 'la siciliana aperta', side: 'b', san: ['e4', 'c5', 'Nf3', 'd6', 'd4'], uci: ['e2e4', 'c7c5', 'g1f3', 'd7d6', 'd2d4'] },
+  { id: 'siciliana-kan', name: 'siciliana Kan', phrase: 'la siciliana Kan', side: 'b', san: ['e4', 'c5', 'Nf3', 'e6', 'd4', 'cxd4', 'Nxd4', 'a6'], uci: ['e2e4', 'c7c5', 'g1f3', 'e7e6', 'd2d4', 'c5d4', 'f3d4', 'a7a6'] },
+  { id: 'siciliana', name: 'siciliana', phrase: 'la siciliana', side: 'b', san: ['e4', 'c5'], uci: ['e2e4', 'c7c5'] },
+  { id: 'francese', name: 'francese', phrase: 'la francese', side: 'b', san: ['e4', 'e6'], uci: ['e2e4', 'e7e6'] },
+  { id: 'caro-kann', name: 'Caro-Kann', phrase: 'la Caro-Kann', side: 'b', san: ['e4', 'c6'], uci: ['e2e4', 'c7c6'] },
+  { id: 'inglese', name: 'inglese', phrase: "l'inglese", side: 'w', san: ['c4'], uci: ['c2c4'] }
+];
+
+function looksLikeUci(moves) {
+  return !!(moves && moves.length && /^[a-h][1-8][a-h][1-8]/.test(moves[0]));
+}
+
+function prefixMatch(moves, seq) {
+  if (!moves || !seq || moves.length < seq.length) return false;
+  for (var i = 0; i < seq.length; i++) if (moves[i] !== seq[i]) return false;
+  return true;
+}
+
+function openingForSide(moves, side) {
+  var useUci = looksLikeUci(moves);
+  var best = null;
+  var bestLen = 0;
+  for (var i = 0; i < OPENINGS.length; i++) {
+    var o = OPENINGS[i];
+    if (o.side !== side && o.side !== 'both') continue;
+    var seq = useUci ? o.uci : o.san;
+    if (!prefixMatch(moves, seq)) continue;
+    if (!best || seq.length > bestLen) {
+      best = o;
+      bestLen = seq.length;
+    }
+  }
+  return best;
+}
+
+function openingFacts(moves) {
+  var white = openingForSide(moves, 'w');
+  var black = openingForSide(moves, 'b');
+  var bits = [];
+  if (white) bits.push('Bianco: ' + white.name);
+  if (black && (!white || black.id !== white.id)) bits.push('Nero: ' + black.name);
+  else if (white && black && white.id === black.id) bits.push('entrambi: ' + white.name);
+  return bits.join('. ');
+}
+
+function buildOpeningSentence(moves) {
+  if (!moves || !moves.length) return '';
+  var white = openingForSide(moves, 'w');
+  var black = openingForSide(moves, 'b');
+  var bothComputers = computerPlaysWhite && computerPlaysBlack;
+  if (white && black && white.id === black.id) {
+    if (bothComputers) return 'Il Bianco e il Nero stanno giocando ' + white.phrase + '.';
+    return 'Stai giocando ' + white.phrase + '.';
+  }
+  if (bothComputers) {
+    var bothBits = [];
+    if (white) bothBits.push('Il Bianco sta giocando ' + white.phrase + '.');
+    if (black) bothBits.push('Il Nero sta giocando ' + black.phrase + '.');
+    return bothBits.join(' ');
+  }
+  var mine = humanColor === 'b' ? black : white;
+  var theirs = humanColor === 'b' ? white : black;
+  var theirLabel = humanColor === 'b' ? 'Il Bianco' : 'Il Nero';
+  var parts = [];
+  if (mine) parts.push('Stai giocando ' + mine.phrase + '.');
+  if (theirs) parts.push(theirLabel + ' sta giocando ' + theirs.phrase + '.');
+  return parts.join(' ');
+}
+
+function openingSentence(moves) {
+  var white = openingForSide(moves, 'w');
+  var black = openingForSide(moves, 'b');
+  var key = (white ? white.id : '-') + '/' + (black ? black.id : '-');
+  if (key === lastOpeningKey) return '';
+  lastOpeningKey = key;
+  return buildOpeningSentence(moves);
+}
+
+function attacksOn(ch, victimColor) {
+  if (!ch) return [];
+  var attacker = victimColor === 'w' ? 'b' : 'w';
+  var parts = ch.fen().split(' ');
+  parts[1] = attacker;
+  parts[3] = '-';
+  var temp;
+  try { temp = new Chess(parts.join(' ')); } catch (e) { return []; }
+  var list = [];
+  try { list = temp.moves({ legal: false, verbose: true }) || []; } catch (e2) { return []; }
+  var out = [];
+  var seen = {};
+  list.forEach(function(m) {
+    if (!m.captured || m.captured === 'k' || seen[m.to]) return;
+    seen[m.to] = true;
+    out.push({ type: m.captured, square: m.to });
+  });
+  return out;
+}
+
+function situationSentence(after, moverColor, yours) {
+  if (!after || !moverColor) return '';
+  var other = moverColor === 'w' ? 'b' : 'w';
+  var hanging = attacksOn(after, moverColor);
+  var pressing = attacksOn(after, other);
+  var bits = [];
+  var inCheck = false;
+  try { inCheck = after.in_check(); } catch (e) {}
+  if (inCheck) bits.push('Il re è sotto scacco.');
+  if (hanging.length) bits.push('Sotto attacco: ' + targetsPhrase(hanging) + '.');
+  else if (!inCheck) bits.push(yours ? 'Nessun tuo pezzo è minacciato.' : 'Nessun pezzo di chi ha mosso è minacciato.');
+  if (pressing.length) bits.push((yours ? 'Attacchi ' : 'Attacca ') + targetsPhrase(pressing) + '.');
+  else bits.push(yours ? 'Con questa mossa non attacchi un pezzo.' : 'Con questa mossa non attacca un pezzo.');
+  return bits.join(' ');
+}
+
+function finishComment(core, ctx, pack, yours) {
+  var moves = [];
+  if (ctx && ctx.index != null && ctx.index >= 0 && moveHistory) moves = moveHistory.slice(0, ctx.index + 1);
+  var opening = openingSentence(moves);
+  var sit = '';
+  if (pack && pack.after && pack.move) sit = situationSentence(pack.after, pack.move.color, yours);
+  var bits = [];
+  if (opening) bits.push(opening);
+  if (core) bits.push(core);
+  if (sit) bits.push(sit);
+  return bits.join(' ');
+}
+
+function firstSentences(text, n) {
+  var s = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!s) return '';
+  var out = '';
+  var count = 0;
+  for (var i = 0; i < s.length && count < n; i++) {
+    out += s.charAt(i);
+    if (s.charAt(i) === '.' || s.charAt(i) === '!' || s.charAt(i) === '?') count++;
+  }
+  return out.trim();
+}
+
+function stripThink(text) {
+  return String(text || '').replace(/<think>[\s\S]*?<\/think>/gi, ' ').replace(/<\/?think>/gi, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function extractModelText(out) {
+  if (!out) return '';
+  if (typeof out === 'string') return stripThink(out);
+  if (out.choices && out.choices[0] && out.choices[0].message) {
+    return stripThink(out.choices[0].message.content || '');
+  }
+  var item = out[0] || out;
+  var gen = item && item.generated_text;
+  if (typeof gen === 'string') return stripThink(gen);
+  if (gen && gen.length) {
+    var last = gen[gen.length - 1];
+    if (last && last.content) return stripThink(last.content);
+    if (typeof last === 'string') return stripThink(last);
+  }
+  if (item && item.content) return stripThink(item.content);
+  return '';
+}
+
+function showCoachWait(text) {
+  if (!coachPanelOpen()) return;
+  var log = document.getElementById('coachLog');
+  if (!log) return;
+  var p = document.getElementById('coachModelWait');
+  if (!p) {
+    p = document.createElement('p');
+    p.id = 'coachModelWait';
+    log.appendChild(p);
+  }
+  p.textContent = text;
+  log.scrollTop = log.scrollHeight;
+}
+
+function hideCoachWait() {
+  var p = document.getElementById('coachModelWait');
+  if (p && p.parentNode) p.parentNode.removeChild(p);
+}
+
+function ensureCoachModel() {
+  if (coachModelState === 'ready') return Promise.resolve(coachModel);
+  if (coachModelState === 'failed') return Promise.resolve(null);
+  if (coachModelPromise) return coachModelPromise;
+  coachModelState = 'loading';
+  showCoachWait('Sto caricando il modello…');
+  coachModelPromise = import('https://cdn.jsdelivr.net/npm/@wllama/wllama@3.8.1/esm/index.js')
+    .then(function(mod) {
+      var Wllama = mod.Wllama;
+      var engine = new Wllama({
+        default: 'https://cdn.jsdelivr.net/npm/@wllama/wllama@3.8.1/esm/wasm/wllama.wasm'
+      });
+      return engine.loadModelFromHF(
+        { repo: 'unsloth/Qwen3-0.6B-GGUF', file: 'Qwen3-0.6B-Q4_K_M.gguf' },
+        {
+          n_ctx: 1024,
+          n_threads: 1,
+          n_gpu_layers: 0,
+          progressCallback: function(prog) {
+            var total = prog && prog.total;
+            if (!total) {
+              showCoachWait('Sto caricando il modello…');
+              return;
+            }
+            var pct = Math.round(100 * (prog.loaded || 0) / total);
+            showCoachWait('Sto caricando il modello… ' + pct + '%');
+          }
+        }
+      ).then(function() {
+        engine.chatTemplateKwargs = { enable_thinking: false };
+        return engine;
+      });
+    })
+    .then(function(engine) {
+      coachModel = engine;
+      coachModelState = 'ready';
+      hideCoachWait();
+      return engine;
+    })
+    .catch(function() {
+      coachModelState = 'failed';
+      coachModel = null;
+      hideCoachWait();
+      tellModelFailed();
+      return null;
+    });
+  return coachModelPromise;
+}
+
+function tellModelFailed() {
+  hideCoachWait();
+  if (coachModelTold || !coachPanelOpen()) return;
+  coachModelTold = true;
+  appendCoach('il modello non è partito');
+}
+
+function attackSummary(beforeFen, spec) {
+  if (!beforeFen || !spec) return 'non calcolata';
+  var pack = playOnFen(beforeFen, spec);
+  if (!pack) return 'non calcolata';
+  var info = inspectPlayed(pack);
+  var bits = [];
+  if (info.capture) bits.push('cattura ' + targetsPhrase([info.capture]));
+  var att = info.attacks.filter(function(a) { return a.type !== 'k'; });
+  if (att.length) bits.push('attacca ' + targetsPhrase(att));
+  if (info.mate) bits.push('scacco matto');
+  else if (info.check) bits.push('scacco');
+  if (!bits.length) return 'non attacca un pezzo';
+  return bits.join(', ');
+}
+
+function graveLabel(loss) {
+  if (loss == null) return 'non calcolato';
+  return loss >= 200 ? 'sì' : 'no';
+}
+
+function askCoachModel(ctx, stockfishText) {
+  if (!coachPanelOpen() || !moveHistory.length || !ctx) return;
+  var idx = ctx.index != null ? ctx.index : (moveHistory.length - 1);
+  if (idx < 0) idx = 0;
+  var moves = moveHistory.slice(0, idx + 1);
+  var opening = openingFacts(moves) || 'nessuna della tabella';
+  var playedSpec = { from: ctx.from, to: ctx.to, promotion: ctx.promotion, san: ctx.san };
+  var bestSpec = ctx.bestUci && ctx.bestUci !== '(none)' ? { uci: ctx.bestUci } : null;
+  var snap = {
+    fen: ctx.afterFen || '',
+    san: ctx.san || '',
+    bestUci: bestSpec ? ctx.bestUci : '',
+    opening: opening,
+    playedAttacks: attackSummary(ctx.beforeFen, playedSpec),
+    bestAttacks: bestSpec ? attackSummary(ctx.beforeFen, bestSpec) : 'non indicata',
+    grave: graveLabel(ctx.loss),
+    stockfishText: stockfishText || ''
+  };
+  coachModelQueue.push(snap);
+  if (coachModelQueue.length > 1) coachModelQueue = coachModelQueue.slice(-1);
+  pumpCoachModel();
+}
+
+function pumpCoachModel() {
+  if (coachModelBusy || !coachModelQueue.length) return;
+  if (!coachPanelOpen()) {
+    coachModelQueue = [];
+    return;
+  }
+  coachModelBusy = true;
+  var snap = coachModelQueue.shift();
+  ensureCoachModel().then(function(engine) {
+    if (!engine) {
+      tellModelFailed();
+      coachModelQueue = [];
+      return null;
+    }
+    var user = 'Apertura dalla tabella: ' + snap.opening
+      + '\nMossa giocata: ' + snap.san
+      + '\nQuella mossa: ' + snap.playedAttacks
+      + '\nMossa migliore di Stockfish, in UCI: ' + (snap.bestUci || 'non indicata')
+      + '\nLa migliore: ' + snap.bestAttacks
+      + '\nScarto grave, sopra 200 centipawn: ' + snap.grave
+      + '\nPosizione FEN: ' + snap.fen
+      + '\n' + snap.stockfishText
+      + '\nScrivi tre o quattro frasi. Se sai l\'italiano, in italiano; altrimenti in inglese. Di\' che apertura è, solo col nome della tabella: se c\'è scritto nessuna della tabella, non inventarne una. Di\' se è una variante. Di\' se l\'errore è grave. Di\' cosa fare la prossima volta. Se la mossa giocata non è la migliore, scrivi l\'ipotesi: se avessi giocato la mossa migliore. Non citare partite famose.'
+      + '\n/no_think';
+    return engine.createChatCompletion({
+      messages: [
+        { role: 'system', content: 'Rispondi in tre o quattro frasi. Italiano se ci riesci, altrimenti inglese. Non inventare aperture. Non citare partite famose.' },
+        { role: 'user', content: user }
+      ],
+      max_tokens: 220,
+      temperature: 0.3,
+      chat_template_kwargs: { enable_thinking: false }
+    });
+  }).then(function(out) {
+    if (!out || !coachPanelOpen()) return;
+    var text = firstSentences(extractModelText(out), 4);
+    if (text) appendCoach(text);
+  }).catch(function() {
+    tellModelFailed();
+    coachModelQueue = [];
+  }).then(function() {
+    coachModelBusy = false;
+    pumpCoachModel();
+  });
+}
+
+function commentForLoss(ctx) {
+  if (!ctx || !ctx.beforeFen) return '';
+  var pack = playOnFen(ctx.beforeFen, {
+    from: ctx.from, to: ctx.to, promotion: ctx.promotion, san: ctx.san
+  });
+  var voice = ctx.voice || 'tu';
+  if (voice === 'auto') voice = pack ? coachVoice(pack.move.color) : 'side';
+  var yours = voice === 'tu';
+  if (!pack) {
+    var fb = italianSan(ctx.san || '');
+    if (!fb) return '';
+    var line = yours ? ('Hai giocato ' + fb + '.') : (ctx.color ? (sideName(ctx.color, true) + ' ha giocato ' + fb + '.') : (fb + '.'));
+    return finishComment(line, ctx, null, yours);
+  }
+  var played = inspectPlayed(pack);
+  var gloss = glossPlayed(ctx.beforeFen, pack.move, yours);
+  var bestUci = ctx.bestUci;
+  var same = sameUci(pack.move, bestUci);
+  var leadSame = yours ? 'Hai giocato ' + gloss : sideName(pack.move.color, true) + ' ha giocato ' + gloss;
+  if (same || !bestUci || bestUci === '(none)') {
+    return finishComment(sameLine(leadSame, played, yours), ctx, pack, yours);
+  }
+  var bestPack = playOnFen(ctx.beforeFen, { uci: bestUci });
+  if (!bestPack) return finishComment(leadSame + playedTail(played, yours) + '.', ctx, pack, yours);
+  var best = inspectPlayed(bestPack);
+  var verbs = consequence(best, played);
+  var bestGloss = glossPlayed(ctx.beforeFen, bestPack.move, yours);
+  var you = leadSame + playedTail(played, yours) + '.';
+  if (!verbs.length) return finishComment('La migliore era ' + bestGloss + '. ' + you, ctx, pack, yours);
+  if (yours) return finishComment('Se avessi giocato ' + bestGloss + ' avresti ' + joinItalian(verbs) + '. ' + you, ctx, pack, yours);
+  return finishComment('Se ' + sideName(pack.move.color, false) + ' avesse giocato ' + bestGloss + ' avrebbe ' + joinItalian(verbs) + '. ' + you, ctx, pack, yours);
+}
+
+function replySentence(beforeFen, move, byComputer, check, mate) {
+  var who = byComputer ? 'Il computer' : sideName(move.color, true);
+  var gloss = glossPlayed(beforeFen, move, false);
+  var text = who + ' ha risposto ' + gloss;
+  var cap = captureInfo(move);
+  var extra = [];
+  if (cap) extra.push('catturando ' + targetsPhrase([cap]));
+  if (mate) extra.push('ha dato scacco matto');
+  else if (check) extra.push('ha dato scacco');
+  if (cap && (check || mate)) text += ', ' + extra[0] + ', e ' + extra[1];
+  else if (extra.length) text += ', ' + extra[0];
+  text += '.';
+  var after = new Chess(beforeFen);
+  var played = null;
+  try {
+    played = after.move({ from: move.from, to: move.to, promotion: move.promotion });
+  } catch (e) { played = null; }
+  if (played) {
+    var sit = situationSentence(after, move.color, false);
+    if (sit) text += ' ' + sit;
+  }
+  return text;
+}
+
+function clearCoachLog() {
+  coachReplyPending = false;
+  lastOpeningKey = '';
+  var log = document.getElementById('coachLog');
+  if (log) log.textContent = '';
+}
+
+function computerMoved(color) {
+  return (color === 'w' && computerPlaysWhite) || (color === 'b' && computerPlaysBlack);
+}
+
+function noteOpponentReply(move, byComputer) {
+  if (!coachReplyPending || !move) return;
+  coachReplyPending = false;
+  if (!coachPanelOpen()) return;
+  var before = fenHistory[viewIndex - 1];
+  if (!before) return;
+  var check = false;
+  var mate = false;
+  try {
+    check = game.in_check();
+    mate = game.in_checkmate();
+  } catch (e) {}
+  appendCoach(replySentence(before, move, byComputer, check, mate));
+}
+
+function replyForIndex(index) {
+  if (index < 0 || !moveHistory || index >= moveHistory.length) return '';
+  var before = fenHistory[index];
+  if (!before) return '';
+  var pack = playOnFen(before, { san: moveHistory[index] });
+  if (!pack) return '';
+  return replySentence(before, pack.move, computerMoved(pack.move.color), pack.after.in_check(), pack.after.in_checkmate());
+}
+
+function startCoachSingle(move) {
+  var before = fenHistory[viewIndex - 1];
+  if (!before || !move) {
+    coachHoldsComputer = false;
+    scheduleComputerAfterHuman();
+    return;
+  }
+  analysis = {
+    mode: 'coach',
+    phase: 'before',
+    beforeFen: before,
+    afterFen: game.fen(),
+    san: move.san,
+    from: move.from,
+    to: move.to,
+    promotion: move.promotion || '',
+    color: move.color,
+    index: viewIndex - 1,
+    voice: 'tu',
+    scoreBefore: null,
+    bestUci: null
+  };
+  queueSearch({kind: 'coach', depth: 8, skill: 20, fen: before});
+}
+
+function reviewAllowed() {
+  return !!(moveHistory && moveHistory.length && (isPaused || abandonedBy || game.game_over()));
+}
+
+function startReview() {
+  if (!reviewAllowed()) return;
+  if (!stockfishReady) {
+    appendCoach('Stockfish non è ancora pronto.');
+    return;
+  }
+  abortAnalysis(false);
+  clearHint(true);
+  cancelSearch();
+  moveMarks = [];
+  glyphMarks = [];
+  clearCoachLog();
+  reviewTail = null;
+  reviewIndex = 0;
+  reviewStep();
+}
+
+function reviewStep() {
+  if (reviewIndex < 0 || reviewIndex >= moveHistory.length) {
+    reviewIndex = -1;
+    updateMoveList();
+    if (reviewTail) {
+      askCoachModel(reviewTail, '');
+      reviewTail = null;
+    }
+    return;
+  }
+  analysis = {
+    mode: 'review',
+    phase: 'before',
+    beforeFen: fenHistory[reviewIndex],
+    afterFen: fenHistory[reviewIndex + 1],
+    san: moveHistory[reviewIndex],
+    index: reviewIndex,
+    voice: 'auto',
+    scoreBefore: null,
+    bestUci: null
+  };
+  queueSearch({kind: 'review', depth: 8, skill: 20, fen: analysis.beforeFen});
+}
+
+function onAnalysisBestmove(kind, uci, score) {
+  var expect = kind === 'review' ? 'review' : (kind === 'glyph' ? 'glyph' : 'coach');
+  if (!analysis || analysis.mode !== expect) return;
+  if (analysis.mode === 'glyph') {
+    if (analysis.phase === 'before') {
+      analysis.scoreBefore = score;
+      analysis.bestUci = uci;
+      analysis.phase = 'after';
+      if (analysis.afterFen) {
+        queueSearch({kind: 'glyph', depth: 8, skill: 20, fen: analysis.afterFen});
+        return;
+      }
+    }
+    noteGlyph(analysis, lossCp(analysis.scoreBefore, score));
+    analysis = null;
+    releaseGlyphHold();
+    return;
+  }
+  if (analysis.mode === 'coach') {
+    if (analysis.phase === 'before') {
+      analysis.scoreBefore = score;
+      analysis.bestUci = uci;
+      if (analysis.afterFen) {
+        analysis.phase = 'after';
+        queueSearch({kind: 'coach', depth: 8, skill: 20, fen: analysis.afterFen});
+        return;
+      }
+    }
+    if (analysis.phase === 'after') analysis.loss = lossCp(analysis.scoreBefore, score);
+    noteGlyph(analysis, analysis.loss);
+    var coachText = commentForLoss(analysis);
+    if (coachText) appendCoach(coachText);
+    askCoachModel(analysis, coachText);
+    coachReplyPending = !matchOver();
+    analysis = null;
+    coachHoldsComputer = false;
+    scheduleComputerAfterHuman();
+    return;
+  }
+  if (analysis.phase === 'before') {
+    analysis.scoreBefore = score;
+    analysis.bestUci = uci;
+    analysis.phase = 'after';
+    queueSearch({kind: kind, depth: 8, skill: 20, fen: analysis.afterFen});
+    return;
+  }
+  var loss = lossCp(analysis.scoreBefore, score);
+  noteGlyph(analysis, loss);
+  var text = commentForLoss(analysis);
+  var idx = analysis.index;
+  if (loss != null && loss >= 50) {
+    moveMarks[idx] = loss >= 300 ? 'blunder' : (loss >= 100 ? 'mistake' : 'inaccuracy');
+  }
+  var reply = replyForIndex(idx + 1);
+  if (reply) text = text ? (text + ' ' + reply) : reply;
+  if (text) appendCoach((idx + 1) + '. ' + text);
+  reviewTail = {
+    afterFen: analysis.afterFen,
+    beforeFen: analysis.beforeFen,
+    san: analysis.san,
+    bestUci: analysis.bestUci,
+    index: analysis.index,
+    loss: loss
+  };
+  analysis = null;
+  reviewIndex++;
+  reviewStep();
+}
+
+function refreshReviewButton() {
+  var btn = document.getElementById('reviewBtn');
+  if (!btn) return;
+  btn.disabled = !reviewAllowed();
+}
+
+function resigningColor() {
+  var turn = game.turn();
+  var computerTurn = (turn === 'w' && computerPlaysWhite) || (turn === 'b' && computerPlaysBlack);
+  if (!computerTurn) return turn;
+  if (!computerPlaysWhite) return 'w';
+  if (!computerPlaysBlack) return 'b';
+  return turn;
+}
+
+function abandonGame() {
+  if (isSetupMode || game.game_over() || abandonedBy) return;
+  if (isReplaying && fenHistory && fenHistory.length) {
+    goToMove(moveHistory.length);
+    if (fenHistory[moveHistory.length]) game.load(fenHistory[moveHistory.length]);
+  }
+  abandonedBy = resigningColor();
+  isPaused = true;
+  selectedSquare = null;
+  cancelSearch();
+  hidePromotionPicker();
+  clearHint(true);
+  abortAnalysis(false);
+  if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+  $('#pauseRestartButton').text('Start');
+  updateStatus(abandonText(), 'danger');
+  updateGameResult();
+}
+
+function castlingFromPosition(pos) {
+  var rights = '';
+  if (pos.e1 === 'wK' && pos.h1 === 'wR') rights += 'K';
+  if (pos.e1 === 'wK' && pos.a1 === 'wR') rights += 'Q';
+  if (pos.e8 === 'bK' && pos.h8 === 'bR') rights += 'k';
+  if (pos.e8 === 'bK' && pos.a8 === 'bR') rights += 'q';
+  return rights || '-';
+}
+
+function pgnForSave() {
+  var pgn = game.pgn() || '';
+  if (startFen && startFen !== 'startpos') {
+    if (pgn.indexOf('[SetUp "1"]') === -1) {
+      pgn = '[SetUp "1"]\n[FEN "' + String(startFen).replace(/"/g, '') + '"]\n' + pgn;
+    }
+    if (pgn.indexOf('\n\n') === -1) pgn = pgn.replace(/\s*$/, '') + '\n\n';
+    var splitAt = pgn.indexOf('\n\n');
+    if (!pgn.slice(splitAt + 2).trim()) {
+      pgn = pgn.slice(0, splitAt).replace(/\s*$/, '') + '\n\n*\n';
+    }
+  }
+  return pgn;
+}
+
+function renderGameList(games) {
+  $('#gameListSpinner').addClass('d-none');
+  var list = document.getElementById('gameList');
+  if (!list) return;
+  list.textContent = '';
+  if (!games || !games.length) {
+    var empty = document.createElement('div');
+    empty.className = 'text-muted small';
+    empty.textContent = 'Nessuna partita salvata.';
+    list.appendChild(empty);
+    return;
+  }
+  games.forEach(function(g) {
+    var item = document.createElement('div');
+    item.className = 'game-item';
+    item.setAttribute('data-id', g.id == null ? '' : String(g.id));
+    var info = document.createElement('div');
+    info.className = 'game-item-info';
+    var nameEl = document.createElement('strong');
+    nameEl.className = 'small';
+    nameEl.textContent = g.name == null ? '' : String(g.name);
+    var meta = document.createElement('span');
+    meta.className = 'text-muted';
+    meta.style.fontSize = '10px';
+    meta.textContent = String(g.date == null ? '' : g.date) + ' · ' + String(g.result == null ? '' : g.result);
+    info.appendChild(nameEl);
+    info.appendChild(meta);
+    var actions = document.createElement('div');
+    actions.className = 'game-item-actions';
+    var loadBtn = document.createElement('button');
+    loadBtn.type = 'button';
+    loadBtn.className = 'btn btn-sm btn-outline-primary load-game-btn';
+    loadBtn.title = 'Carica';
+    loadBtn.textContent = '▶';
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'btn btn-sm btn-outline-danger delete-game-btn';
+    delBtn.title = 'Elimina';
+    delBtn.textContent = '✕';
+    actions.appendChild(loadBtn);
+    actions.appendChild(delBtn);
+    item.appendChild(info);
+    item.appendChild(actions);
+    list.appendChild(item);
+  });
+}
+
+function renderGameListError(err) {
+  $('#gameListSpinner').addClass('d-none');
+  var list = document.getElementById('gameList');
+  if (!list) return;
+  list.textContent = '';
+  var div = document.createElement('div');
+  div.className = 'text-danger small';
+  var msg = err && err.message ? err.message : err;
+  div.textContent = 'Errore: ' + (msg == null ? '' : String(msg));
+  list.appendChild(div);
+}
+
+function fetchGameList() {
+  $('#gameListSpinner').removeClass('d-none');
+  var list = document.getElementById('gameList');
+  if (list) list.textContent = '';
+  google.script.run
+    .withSuccessHandler(renderGameList)
+    .withFailureHandler(renderGameListError)
+    .listGames();
+}
+
 
 // ── REPLAY / HISTORY ──
 var moveHistory = [];      // Array di SAN moves
@@ -163,13 +2386,13 @@ var pieceThemes = {
   'elven':       function(piece) { return buildSvgPiece('elven',  piece); },
   'orcish':      function(piece) { return buildSvgPiece('orcish', piece); },
   // ── HD PNG sets (Grok/Aurora generated) served via jsDelivr CDN ─────────
-  'fable_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/fable/{piece}.png',
-  'fable2_hd':    'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/fable2/{piece}.png',
-  'scifi_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/scifi/{piece}.png',
-  'elven_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/elven/{piece}.png',
-  'orcish_hd':    'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/orcish/{piece}.png',
-  'fairytale_hd': 'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/fairytale/{piece}.png',
-  'dinosaurs_hd': 'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/dinosaurs/{piece}.png'
+  'fable_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/fable_obsidian/{piece}.png',
+  'fable2_hd':    'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/fable2_obsidian/{piece}.png',
+  'scifi_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/scifi_obsidian/{piece}.png',
+  'elven_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/elven_obsidian/{piece}.png',
+  'orcish_hd':    'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/orcish_obsidian/{piece}.png',
+  'fairytale_hd': 'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/fairytale_obsidian/{piece}.png',
+  'dinosaurs_hd': 'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/dinosaurs_obsidian/{piece}.png'
 };
 var currentPieceTheme = pieceThemes['cburnett'];
 var currentPieceThemeBlack = pieceThemes['cburnett'];
@@ -223,8 +2446,661 @@ function updateStatus(text, alertType) {
     .text(text);
 }
 
+var OVERLAY_CLASSES = 'hl-under-attack hl-en-prise highlight-legal hl-legal-capture hl-controlled hl-inspect-target hl-inspect-attacker hl-safe-empty hl-hint hl-check threatened-piece unprotected-piece';
+
 function removeAllHighlights() {
-  $('#myBoard .square-55d63').removeClass('highlight-white highlight-black highlight-selected highlight-legal threatened-piece unprotected-piece');
+  $('#myBoard .square-55d63').removeClass('highlight-white highlight-black highlight-selected ' + OVERLAY_CLASSES);
+  applyActiveOverlays();
+}
+
+function applyActiveOverlays() {
+  if (!$('#myBoard .square-55d63').length) return;
+  if (selectedSquare && !viewChess().get(selectedSquare)) selectedSquare = null;
+  $('#myBoard .square-55d63').removeClass(OVERLAY_CLASSES + ' highlight-white highlight-black highlight-selected');
+  if (showUnderAttack) paintUnderAttack();
+  if (showEnPrise) paintEnPrise();
+  if (selectedSquare && showLegal) paintLegal(selectedSquare);
+  if (selectedSquare && showControlled) paintControlled(selectedSquare);
+  if (showSafeEmpty) paintSafeEmpty();
+  if (showInspect && inspectSquare) paintInspect(inspectSquare);
+  if (selectedSquare) $('#myBoard .square-' + selectedSquare).addClass('highlight-selected');
+  if (lastMoveMark) {
+    $('#myBoard .square-' + lastMoveMark.from).addClass(lastMoveMark.cls);
+    $('#myBoard .square-' + lastMoveMark.to).addClass(lastMoveMark.cls);
+  }
+  if (hintSquares) {
+    $('#myBoard .square-' + hintSquares.from).addClass('hl-hint');
+    $('#myBoard .square-' + hintSquares.to).addClass('hl-hint');
+  }
+  paintCheck();
+  paintScacco();
+  syncAnimWeather();
+}
+
+function paintCheck() {
+  var ch;
+  try { ch = viewChess(); } catch (e) { return; }
+  if (!ch) return;
+  var inCheck = false;
+  try { inCheck = ch.in_check(); } catch (e2) { return; }
+  if (!inCheck) return;
+  var turn = ch.turn();
+  var files = 'abcdefgh';
+  var f, r, sq, piece;
+  for (f = 0; f < 8; f++) {
+    for (r = 1; r <= 8; r++) {
+      sq = files.charAt(f) + r;
+      piece = ch.get(sq);
+      if (piece && piece.type === 'k' && piece.color === turn) {
+        $('#myBoard .square-' + sq).addClass('hl-check');
+        return;
+      }
+    }
+  }
+}
+
+
+function paintScacco() {
+  var ch = null;
+  try { ch = viewChess(); } catch (e) { ch = null; }
+  var inCheck = false;
+  var mate = false;
+  if (ch) {
+    try { mate = ch.in_checkmate(); } catch (e2) { mate = false; }
+    try { inCheck = mate || ch.in_check(); } catch (e3) { inCheck = false; }
+  }
+  ['scaccoNota', 'scaccoNotaRight'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = '';
+    el.classList.remove('scacco-mate');
+    if (!inCheck) {
+      el.hidden = true;
+      return;
+    }
+    el.hidden = false;
+    if (mate) {
+      el.classList.add('scacco-mate');
+      var plusM = document.createElement('span');
+      plusM.className = 'scacco-plus';
+      plusM.textContent = '#';
+      var labM = document.createElement('span');
+      labM.textContent = 'Scacco matto!';
+      el.appendChild(plusM);
+      el.appendChild(labM);
+    } else {
+      var plus = document.createElement('span');
+      plus.className = 'scacco-plus';
+      plus.textContent = '+';
+      var lab = document.createElement('span');
+      lab.textContent = 'Scacco!';
+      el.appendChild(plus);
+      el.appendChild(lab);
+    }
+  });
+}
+
+function paintUnderAttack() {
+  if (!showUnderAttack) return;
+  var ch = viewChess();
+  var mover = ch.turn();
+  var enemy = mover === 'w' ? 'b' : 'w';
+  allSquares().forEach(function(square) {
+    var piece = ch.get(square);
+    if (!piece || piece.color !== mover) return;
+    if (getAttackers(square, enemy, false, true).length) {
+      $('#myBoard .square-' + square).addClass('hl-under-attack');
+    }
+  });
+}
+
+var PIECE_VALUE = {p: 1, n: 3, b: 3, r: 5, q: 9};
+var KING_ORDER = 100;
+var BISHOP_DIR = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+var ROOK_DIR = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+function sqXY(sq) {
+  return {f: sq.charCodeAt(0) - 97, r: parseInt(sq.charAt(1), 10) - 1};
+}
+
+function sqName(f, r) {
+  if (f < 0 || f > 7 || r < 0 || r > 7) return '';
+  return String.fromCharCode(97 + f) + (r + 1);
+}
+
+function rayAttacks(occ, from, to, dirs) {
+  var a = sqXY(from);
+  var b = sqXY(to);
+  var df = b.f - a.f;
+  var dr = b.r - a.r;
+  if (df === 0 && dr === 0) return false;
+  var stepF = df === 0 ? 0 : (df > 0 ? 1 : -1);
+  var stepR = dr === 0 ? 0 : (dr > 0 ? 1 : -1);
+  if (stepF !== 0 && stepR !== 0 && Math.abs(df) !== Math.abs(dr)) return false;
+  var okDir = false;
+  var i;
+  for (i = 0; i < dirs.length; i++) {
+    if (dirs[i][0] === stepF && dirs[i][1] === stepR) { okDir = true; break; }
+  }
+  if (!okDir) return false;
+  var f = a.f + stepF;
+  var r = a.r + stepR;
+  while (f !== b.f || r !== b.r) {
+    if (occ[sqName(f, r)]) return false;
+    f += stepF;
+    r += stepR;
+  }
+  return true;
+}
+
+function geometricallyAttacks(occ, from, to) {
+  if (!from || !to || from === to) return false;
+  var piece = occ[from];
+  if (!piece) return false;
+  var a = sqXY(from);
+  var b = sqXY(to);
+  var df = b.f - a.f;
+  var dr = b.r - a.r;
+  var adf = Math.abs(df);
+  var adr = Math.abs(dr);
+  if (piece.type === 'p') {
+    var fwd = piece.color === 'w' ? 1 : -1;
+    return dr === fwd && adf === 1;
+  }
+  if (piece.type === 'n') return (adf === 1 && adr === 2) || (adf === 2 && adr === 1);
+  if (piece.type === 'k') return adf <= 1 && adr <= 1 && (adf + adr > 0);
+  if (piece.type === 'b') return rayAttacks(occ, from, to, BISHOP_DIR);
+  if (piece.type === 'r') return rayAttacks(occ, from, to, ROOK_DIR);
+  if (piece.type === 'q') return rayAttacks(occ, from, to, BISHOP_DIR.concat(ROOK_DIR));
+  return false;
+}
+
+function kingSquare(occ, color) {
+  var squares = Object.keys(occ);
+  var i;
+  for (i = 0; i < squares.length; i++) {
+    var p = occ[squares[i]];
+    if (p && p.type === 'k' && p.color === color) return squares[i];
+  }
+  return '';
+}
+
+function kingAttacked(occ, color) {
+  var king = kingSquare(occ, color);
+  if (!king) return false;
+  var squares = Object.keys(occ);
+  var i;
+  for (i = 0; i < squares.length; i++) {
+    var p = occ[squares[i]];
+    if (!p || p.color === color) continue;
+    if (geometricallyAttacks(occ, squares[i], king)) return true;
+  }
+  return false;
+}
+
+function cloneOcc(occ) {
+  var next = {};
+  var squares = Object.keys(occ);
+  var i;
+  for (i = 0; i < squares.length; i++) {
+    var p = occ[squares[i]];
+    next[squares[i]] = {type: p.type, color: p.color};
+  }
+  return next;
+}
+
+function canLegallyCaptureOn(occ, from, to) {
+  var piece = occ[from];
+  if (!piece || from === to) return false;
+  if (!geometricallyAttacks(occ, from, to)) return false;
+  var next = cloneOcc(occ);
+  delete next[from];
+  next[to] = {type: piece.type, color: piece.color};
+  return !kingAttacked(next, piece.color);
+}
+
+function legalCaptors(occ, square, side) {
+  var out = [];
+  var squares = Object.keys(occ);
+  var i;
+  for (i = 0; i < squares.length; i++) {
+    var from = squares[i];
+    var p = occ[from];
+    if (!p || p.color !== side || from === square) continue;
+    if (p.type !== 'k' && !PIECE_VALUE[p.type]) continue;
+    if (!canLegallyCaptureOn(occ, from, square)) continue;
+    out.push({
+      square: from,
+      type: p.type,
+      color: p.color,
+      value: p.type === 'k' ? KING_ORDER : PIECE_VALUE[p.type]
+    });
+  }
+  return out;
+}
+
+function applyCapture(occ, from, to) {
+  var next = cloneOcc(occ);
+  var mover = next[from];
+  delete next[from];
+  next[to] = {type: mover.type, color: mover.color};
+  return next;
+}
+
+function seeExchange(occ, square, side, captureValue, depth) {
+  if ((depth || 0) > 32) return 0;
+  var options = legalCaptors(occ, square, side);
+  if (!options.length) return 0;
+  var minVal = options[0].value;
+  var i;
+  for (i = 1; i < options.length; i++) if (options[i].value < minVal) minVal = options[i].value;
+  var best = 0;
+  for (i = 0; i < options.length; i++) {
+    if (options[i].value !== minVal) continue;
+    var mover = options[i];
+    var next = applyCapture(occ, mover.square, square);
+    var landedVal = mover.value;
+    if (mover.type === 'p' && ((mover.color === 'w' && square.charAt(1) === '8') || (mover.color === 'b' && square.charAt(1) === '1'))) {
+      next[square] = {type: 'q', color: mover.color};
+      landedVal = 9;
+    }
+    var recapture = seeExchange(next, square, side === 'w' ? 'b' : 'w', landedVal, (depth || 0) + 1);
+    var gain = captureValue - recapture;
+    if (gain < 0) gain = 0;
+    if (gain > best) best = gain;
+  }
+  return best;
+}
+
+function isSquareInPresa(occ, square) {
+  var piece = occ[square];
+  if (!piece || piece.type === 'k' || !PIECE_VALUE[piece.type]) return false;
+  var enemy = piece.color === 'w' ? 'b' : 'w';
+  return seeExchange(occ, square, enemy, PIECE_VALUE[piece.type], 0) > 0;
+}
+
+function boardOccupancy(ch) {
+  var occ = {};
+  allSquares().forEach(function(square) {
+    var p = ch.get(square);
+    if (p) occ[square] = {type: p.type, color: p.color};
+  });
+  return occ;
+}
+
+function paintEnPrise() {
+  // in-presa-scambio: catena sulla stessa casa, non qualsiasi attacco.
+  // Chi attacca prende col più economico che può farlo legalmente, poi il
+  // difensore riprende col suo più economico. Si smette se il colpo successivo
+  // fa guadagnare meno di quanto si perde. In presa solo se chi ha iniziato
+  // guadagna più punti di chi difendeva. Pari o in perdita: no. Entrambi i
+  // colori. Il re non si colora. Pedone 1, cavallo 3, alfiere 3, torre 5, donna 9.
+  if (!showEnPrise) return;
+  var occ = boardOccupancy(viewChess());
+  allSquares().forEach(function(square) {
+    if (isSquareInPresa(occ, square)) {
+      $('#myBoard .square-' + square).addClass('hl-en-prise');
+    }
+  });
+}
+
+function paintLegal(square) {
+  var ch = viewChess();
+  var piece = ch.get(square);
+  if (!piece) return;
+  var temp = ch;
+  if (ch.turn() !== piece.color) {
+    var parts = ch.fen().split(' ');
+    parts[1] = piece.color;
+    parts[3] = '-';
+    try { temp = new Chess(parts.join(' ')); } catch (e) { return; }
+  }
+  temp.moves({ square: square, verbose: true }).forEach(function(m) {
+    $('#myBoard .square-' + m.to).addClass(m.captured ? 'hl-legal-capture' : 'highlight-legal');
+  });
+}
+
+function squaresControlledBy(square) {
+  var ch = viewChess();
+  var piece = ch.get(square);
+  if (!piece) return [];
+  if (typeof ch.attacks === 'function') {
+    try { return ch.attacks(square) || []; } catch (e) {}
+  }
+  var out = [];
+  allSquares().forEach(function(target) {
+    if (getAttackers(target, piece.color, true, true).indexOf(square) !== -1) {
+      out.push(target);
+    }
+  });
+  return out;
+}
+
+function paintControlled(square) {
+  squaresControlledBy(square).forEach(function(target) {
+    $('#myBoard .square-' + target).addClass('hl-controlled');
+  });
+}
+
+function paintSafeEmpty() {
+  var ch = viewChess();
+  var enemy = ch.turn() === 'w' ? 'b' : 'w';
+  allSquares().forEach(function(square) {
+    if (ch.get(square)) return;
+    if (!getAttackers(square, enemy, true, true).length) {
+      $('#myBoard .square-' + square).addClass('hl-safe-empty');
+    }
+  });
+}
+
+function attackersOf(square) {
+  var ch = viewChess();
+  var out = [];
+  var seen = {};
+  ['w', 'b'].forEach(function(color) {
+    getAttackers(square, color, true, true).forEach(function(from) {
+      if (seen[from]) return;
+      seen[from] = true;
+      var p = ch.get(from);
+      out.push({ from: from, color: color, type: p ? p.type : '' });
+    });
+  });
+  return out;
+}
+
+function paintInspect(square) {
+  $('#myBoard .square-' + square).addClass('hl-inspect-target');
+  attackersOf(square).forEach(function(a) {
+    $('#myBoard .square-' + a.from).addClass('hl-inspect-attacker');
+  });
+}
+
+function announceInspect(square) {
+  var nomi = { p: 'pedone', n: 'cavallo', b: 'alfiere', r: 'torre', q: 'donna', k: 're' };
+  var colori = { w: 'Bianco', b: 'Nero' };
+  var list = attackersOf(square);
+  if (!list.length) {
+    updateStatus(square + ' non è attaccata.', 'info');
+    return;
+  }
+  var bits = list.map(function(a) {
+    return (nomi[a.type] || 'pezzo') + ' ' + (colori[a.color] || '') + ' in ' + a.from;
+  });
+  updateStatus(square + ' è attaccata da: ' + bits.join(', ') + '.', 'warning');
+}
+
+function highlightThreatsAndUnprotected() {
+  if (!showUnderAttack) return;
+  paintUnderAttack();
+}
+
+function selectPieceForOverlay(square) {
+  var piece = viewChess().get(square);
+  if (!piece) {
+    selectedSquare = null;
+    removeAllHighlights();
+    return;
+  }
+  selectedSquare = square;
+  highlightSelectedAndMoves(square);
+}
+
+function onBoardSquareClick(square) {
+  if (isSetupMode) return;
+  if (promotionPending) {
+    if (square === promotionPending.from) {
+      hidePromotionPicker();
+      selectedSquare = null;
+      removeAllHighlights();
+      updateStatus(game.turn() === 'w' ? 'Tocca al Bianco' : 'Tocca al Nero', 'info');
+    }
+    return;
+  }
+  if (showInspect) {
+    inspectSquare = square;
+    applyActiveOverlays();
+    announceInspect(square);
+    return;
+  }
+  if (isMobile && !matchOver()) {
+    onSquareTap(square);
+    return;
+  }
+  if (showLegal || showControlled) selectPieceForOverlay(square);
+}
+
+function bindBoardClicks() {
+  $('#myBoard').off('click.segnalazioni').on('click.segnalazioni', '.square-55d63', function() {
+    var classes = $(this).attr('class') || '';
+    var match = classes.match(/square-([a-h][1-8])/);
+    if (match) onBoardSquareClick(match[1]);
+  });
+}
+
+function loadOverlaySwitches() {
+  function read(key) {
+    try { return localStorage.getItem(key) === '1'; } catch (e) { return false; }
+  }
+  showUnderAttack = read('scacchi-switch-sotto-attacco');
+  showEnPrise = read('scacchi-switch-in-presa');
+  showLegal = read('scacchi-switch-dove');
+  showControlled = read('scacchi-switch-controllate');
+  showInspect = read('scacchi-switch-clicca');
+  showSafeEmpty = read('scacchi-switch-libere');
+  showAnimazioni = read('scacchi-switch-animazioni');
+  showClassifica = read('scacchi-switch-classifica');
+  showArchivio = read('scacchi-switch-archivio');
+  showChiVince = read('scacchi-switch-chi-vince');
+  showAutoHint = read('scacchi-switch-mossa-migliore');
+  $('#switchSottoAttacco').prop('checked', showUnderAttack);
+  $('#switchInPresa').prop('checked', showEnPrise);
+  $('#switchDovePuoAndare').prop('checked', showLegal);
+  $('#switchCaselleControllate').prop('checked', showControlled);
+  $('#switchCliccaMinacciata').prop('checked', showInspect);
+  $('#switchCaselleLibere').prop('checked', showSafeEmpty);
+  $('#switchAnimazioni').prop('checked', showAnimazioni);
+  $('#switchClassifica').prop('checked', showClassifica);
+  $('#switchArchivio').prop('checked', showArchivio);
+  $('#switchChiVince').prop('checked', showChiVince);
+  $('#switchMossaMigliore').prop('checked', showAutoHint);
+  paintArchivio();
+  paintApertura();
+  paintChiVince();
+}
+
+function bindOverlaySwitches() {
+  function wire(id, key, apply) {
+    $('#' + id).on('change', function() {
+      apply($(this).is(':checked'));
+      try { localStorage.setItem(key, $(this).is(':checked') ? '1' : '0'); } catch (e) {}
+      applyActiveOverlays();
+    });
+  }
+  wire('switchSottoAttacco', 'scacchi-switch-sotto-attacco', function(on) { showUnderAttack = on; });
+  wire('switchInPresa', 'scacchi-switch-in-presa', function(on) { showEnPrise = on; });
+  wire('switchDovePuoAndare', 'scacchi-switch-dove', function(on) { showLegal = on; });
+  wire('switchCaselleControllate', 'scacchi-switch-controllate', function(on) { showControlled = on; });
+  wire('switchCliccaMinacciata', 'scacchi-switch-clicca', function(on) { showInspect = on; });
+  wire('switchCaselleLibere', 'scacchi-switch-libere', function(on) { showSafeEmpty = on; });
+  wire('switchAnimazioni', 'scacchi-switch-animazioni', function(on) {
+    showAnimazioni = on;
+    resumeAnimAudio();
+  });
+  wire('switchClassifica', 'scacchi-switch-classifica', function(on) {
+    showClassifica = on;
+    paintGlyphs();
+  });
+  wire('switchArchivio', 'scacchi-switch-archivio', function(on) {
+    showArchivio = on;
+    paintArchivio();
+  });
+  wire('switchChiVince', 'scacchi-switch-chi-vince', function(on) {
+    showChiVince = on;
+    paintChiVince();
+  });
+  wire('switchMossaMigliore', 'scacchi-switch-mossa-migliore', function(on) {
+    showAutoHint = on;
+    if (!on) clearHint(true);
+    else maybeAutoHint();
+  });
+  $('#switchAnimazioni').on('click', function() { resumeAnimAudio(); });
+  document.addEventListener('pointerdown', function() {
+    if (showAnimazioni) resumeAnimAudio();
+  });
+}
+
+function resumeAnimAudio() {
+  var AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  if (!animAudioCtx) {
+    try { animAudioCtx = new AC(); } catch (e) { return null; }
+  }
+  if (animAudioCtx.state === 'suspended') {
+    try { animAudioCtx.resume(); } catch (e2) {}
+  }
+  return animAudioCtx;
+}
+
+function playBoom() {
+  var ctx = resumeAnimAudio();
+  if (!ctx) return;
+  function start() { playBoomNow(ctx); }
+  if (ctx.state === 'running') { start(); return; }
+  var pending = ctx.resume();
+  if (pending && pending.then) pending.then(start);
+}
+
+function playBoomNow(ctx) {
+  var t = ctx.currentTime;
+  var dur = 0.36;
+  var len = Math.floor(ctx.sampleRate * dur);
+  var buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+  var data = buffer.getChannelData(0);
+  var i;
+  for (i = 0; i < len; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 1.8);
+  }
+  var noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  var filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(2200, t);
+  filter.frequency.exponentialRampToValueAtTime(140, t + 0.28);
+  var ng = ctx.createGain();
+  ng.gain.setValueAtTime(0.28, t);
+  ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.34);
+  noise.connect(filter);
+  filter.connect(ng);
+  ng.connect(ctx.destination);
+  noise.start(t);
+  noise.stop(t + dur);
+
+  var osc = ctx.createOscillator();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(90 + Math.random() * 50, t);
+  osc.frequency.exponentialRampToValueAtTime(36, t + 0.22);
+  var og = ctx.createGain();
+  og.gain.setValueAtTime(0.34, t);
+  og.gain.exponentialRampToValueAtTime(0.0001, t + 0.26);
+  osc.connect(og);
+  og.connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + 0.28);
+}
+
+function capturedSquare(move) {
+  if (!move || !move.captured) return '';
+  var flags = move.flags || '';
+  if (flags.indexOf('e') !== -1 && move.from && move.to) {
+    return move.to.charAt(0) + move.from.charAt(1);
+  }
+  return move.to || '';
+}
+
+function boomOn(square) {
+  if (!showAnimazioni || !square) return;
+  var el = document.querySelector('#myBoard .square-' + square);
+  if (!el) return;
+  var old = el.querySelector('.anim-boom');
+  if (old && old.parentNode) old.parentNode.removeChild(old);
+  var node = document.createElement('div');
+  node.className = 'anim-boom';
+  node.setAttribute('aria-hidden', 'true');
+  node.innerHTML = '<span class="anim-boom-core"></span><span class="anim-boom-ring"></span>'
+    + '<span class="anim-spark s1"></span><span class="anim-spark s2"></span>'
+    + '<span class="anim-spark s3"></span><span class="anim-spark s4"></span>'
+    + '<span class="anim-spark s5"></span><span class="anim-spark s6"></span>';
+  el.appendChild(node);
+  playBoom();
+  setTimeout(function() {
+    if (node.parentNode) node.parentNode.removeChild(node);
+  }, 720);
+}
+
+function kingInDanger(color) {
+  var ch = viewChess();
+  if (ch.turn() === color) return ch.in_check();
+  var parts = ch.fen().split(' ');
+  parts[1] = color;
+  parts[3] = '-';
+  try {
+    var temp = new Chess(parts.join(' '));
+    return temp.in_check();
+  } catch (e) { return false; }
+}
+
+function endangeredSquares() {
+  var occ = boardOccupancy(viewChess());
+  var out = [];
+  allSquares().forEach(function(square) {
+    if (isSquareInPresa(occ, square)) out.push(square);
+  });
+  return out;
+}
+
+function weatherNode() {
+  var node = document.createElement('div');
+  node.className = 'anim-weather';
+  node.setAttribute('aria-hidden', 'true');
+  node.innerHTML = '<span class="anim-cloud"></span>'
+    + '<span class="anim-drop d1"></span><span class="anim-drop d2"></span>'
+    + '<span class="anim-drop d3"></span><span class="anim-drop d4"></span>'
+    + '<span class="anim-drop d5"></span><span class="anim-bolt"></span>';
+  return node;
+}
+
+function syncAnimWeather() {
+  if (!showAnimazioni) {
+    if (animWeatherKey || document.querySelector('#myBoard .anim-weather')) {
+      $('#myBoard .anim-weather').remove();
+      animWeatherKey = '';
+    }
+    return;
+  }
+  if (!$('#myBoard .square-55d63').length) return;
+  var fen = viewChess().fen();
+  var present = $('#myBoard .anim-weather').length;
+  if (animWeatherKey.indexOf(fen + '|') === 0) {
+    var listed = animWeatherKey.slice(fen.length + 1);
+    var expected = listed ? listed.split(',').length : 0;
+    if (present === expected) return;
+  }
+  var squares = endangeredSquares();
+  animWeatherKey = fen + '|' + squares.join(',');
+  var want = {};
+  squares.forEach(function(sq) { want[sq] = true; });
+  $('#myBoard .square-55d63').each(function() {
+    var match = (this.className || '').match(/square-([a-h][1-8])/);
+    if (!match) return;
+    var sq = match[1];
+    var has = this.querySelector('.anim-weather');
+    if (want[sq]) {
+      if (!has) this.appendChild(weatherNode());
+      else this.appendChild(has);
+    } else if (has && has.parentNode) {
+      has.parentNode.removeChild(has);
+    }
+  });
 }
 
 function replaceFenSquare(fenBoard, square, newPiece) {
@@ -251,89 +3127,148 @@ function replaceFenSquare(fenBoard, square, newPiece) {
   return boardArray.join('/');
 }
 
-function getAttackers(targetSquare, attackerColor, isFriendly) {
-  var fenParts = game.fen().split(' ');
+function viewChess() {
+  if (fenHistory && fenHistory[viewIndex]) {
+    try { return new Chess(fenHistory[viewIndex]); } catch (e) {}
+  }
+  return game;
+}
+
+function allSquares() {
+  var squares = [];
+  for (var file = 0; file < 8; file++) {
+    for (var rank = 1; rank <= 8; rank++) {
+      squares.push(String.fromCharCode(97 + file) + rank);
+    }
+  }
+  return squares;
+}
+
+function fenToCells(fenBoard) {
+  var rows = fenBoard.split('/');
+  var cells = [];
+  for (var r = 0; r < 8; r++) {
+    var row = [];
+    var s = rows[r] || '';
+    for (var i = 0; i < s.length; i++) {
+      if (/\d/.test(s[i])) {
+        for (var k = 0; k < parseInt(s[i], 10); k++) row.push('.');
+      } else {
+        row.push(s[i]);
+      }
+    }
+    while (row.length < 8) row.push('.');
+    cells.push(row);
+  }
+  return cells;
+}
+
+function cellsToFen(cells) {
+  var parts = [];
+  for (var r = 0; r < cells.length; r++) {
+    var out = '';
+    var n = 0;
+    for (var c = 0; c < cells[r].length; c++) {
+      if (cells[r][c] === '.') n++;
+      else {
+        if (n) { out += n; n = 0; }
+        out += cells[r][c];
+      }
+    }
+    if (n) out += n;
+    parts.push(out);
+  }
+  return parts.join('/');
+}
+
+function getAttackers(targetSquare, attackerColor, isFriendly, pseudoLegal) {
+  var fenParts = viewChess().fen().split(' ');
   fenParts[1] = attackerColor;
   fenParts[3] = '-';
   if (isFriendly) {
+    var occ = viewChess().get(targetSquare);
+    if (occ && occ.type === 'k' && occ.color === attackerColor) {
+      var cells = fenToCells(fenParts[0]);
+      var tr = 8 - parseInt(targetSquare[1], 10);
+      var tc = targetSquare.charCodeAt(0) - 97;
+      var kingChar = cells[tr] && cells[tr][tc];
+      var dest = null;
+      if (kingChar && kingChar !== '.') {
+        for (var r = 0; r < 8 && !dest; r++) {
+          for (var c = 0; c < 8; c++) {
+            if (cells[r][c] !== '.') continue;
+            if (r === tr || c === tc || Math.abs(r - tr) === Math.abs(c - tc)) continue;
+            dest = { r: r, c: c };
+            break;
+          }
+        }
+        if (dest) {
+          cells[tr][tc] = '.';
+          cells[dest.r][dest.c] = kingChar;
+          fenParts[0] = cellsToFen(cells);
+        }
+      }
+    }
     var dummyPiece = attackerColor === 'w' ? 'p' : 'P';
     fenParts[0] = replaceFenSquare(fenParts[0], targetSquare, dummyPiece);
   }
   var attackers = [];
+  var seen = {};
   try {
     var tempGame = new Chess(fenParts.join(' '));
-    tempGame.moves({verbose: true}).forEach(function(m) {
-      if (m.to === targetSquare) attackers.push(m.from);
+    var opts = { verbose: true };
+    if (pseudoLegal) opts.legal = false;
+    tempGame.moves(opts).forEach(function(m) {
+      if (m.to === targetSquare && !seen[m.from]) {
+        seen[m.from] = true;
+        attackers.push(m.from);
+      }
     });
-  } catch(e) { console.warn('getAttackers error:', e); }
+  } catch (e) { console.warn('getAttackers error:', e); }
   return attackers;
 }
 
-function highlightThreatsAndUnprotected() {
-  removeAllHighlights();
-  if (computerPlaysWhite && computerPlaysBlack) return;
-  if (!computerPlaysWhite && !computerPlaysBlack) return;
-  if (game.turn() !== humanColor) return;
-  var squares = [];
-  for (var row = 0; row < 8; row++) {
-    for (var col = 0; col < 8; col++) {
-      var square = String.fromCharCode(97 + col) + (8 - row);
-      var piece = game.get(square);
-      if (piece && piece.color === humanColor) squares.push(square);
-    }
-  }
-  var enemyColor = humanColor === 'w' ? 'b' : 'w';
-  squares.forEach(function(square) {
-    var enemyAttackers = getAttackers(square, enemyColor, false);
-    var friendlyProtectors = getAttackers(square, humanColor, true);
-    if (enemyAttackers.length > 0) {
-      $('#myBoard .square-' + square).addClass('threatened-piece');
-    }
-    if (friendlyProtectors.length === 0 && enemyAttackers.length > 0) {
-      $('#myBoard .square-' + square).addClass('unprotected-piece');
-    }
-  });
-}
-
 function updateCapturedPieces() {
-  // whiteCaptured holds WHITE pieces (taken by Black) — use the white theme.
-  // blackCaptured holds BLACK pieces (taken by White) — use the black theme
-  // when asymmetric, else the unified white theme.
   var whiteTheme = currentPieceTheme;
   var blackTheme = asymmetricPieces ? currentPieceThemeBlack : currentPieceTheme;
   var whiteHtml = '';
   whiteCaptured.forEach(function(p) {
     var url = resolvePieceUrl(whiteTheme, 'w' + p.toUpperCase());
-    whiteHtml += '<img src="' + url + '" style="width:40px;height:40px;object-fit:contain;" title="' + p + '">';
+    whiteHtml += '<img src="' + url + '" alt="">';
   });
-  $('#whiteCaptured').html('<h6 class="text-muted">Catturati dal Nero</h6>' + whiteHtml);
-  $('#whiteCapturedRight').html('<h6 class="text-muted">Catturati dal Nero</h6>' + whiteHtml);
+  $('#whiteCaptured, #whiteCapturedRight').html(whiteHtml);
   var blackHtml = '';
   blackCaptured.forEach(function(p) {
     var url = resolvePieceUrl(blackTheme, 'b' + p.toUpperCase());
-    blackHtml += '<img src="' + url + '" style="width:40px;height:40px;object-fit:contain;" title="' + p + '">';
+    blackHtml += '<img src="' + url + '" alt="">';
   });
-  $('#blackCaptured').html('<h6 class="text-muted">Catturati dal Bianco</h6>' + blackHtml);
-  $('#blackCapturedRight').html('<h6 class="text-muted">Catturati dal Bianco</h6>' + blackHtml);
+  $('#blackCaptured, #blackCapturedRight').html(blackHtml);
+  bindPieceImgRetry(document.getElementById('whiteCaptured'));
+  bindPieceImgRetry(document.getElementById('whiteCapturedRight'));
+  bindPieceImgRetry(document.getElementById('blackCaptured'));
+  bindPieceImgRetry(document.getElementById('blackCapturedRight'));
 }
 
 function updateAdvantageBar(score) {
   currentScore = score;
   if (game.game_over() || game.in_draw()) {
-    $('#advantageBarBlack, #advantageBarBlackRight').css('height', '50%');
-    $('#advantageBarWhite, #advantageBarWhiteRight').css('height', '50%');
-    $('#scoreText, #scoreTextRight').text('Patta');
+    paintBars(50);
+    setEvalLabels('0', 'Patta');
     return;
   }
   var winProb = 1 / (1 + Math.exp(-0.0035 * score));
-  var whiteHeight = winProb * 100;
-  $('#advantageBarWhite, #advantageBarWhiteRight').css('height', whiteHeight + '%');
-  $('#advantageBarBlack, #advantageBarBlackRight').css('height', (100 - whiteHeight) + '%');
-  $('#scoreText, #scoreTextRight').text(score + ' cp (' + Math.round(winProb * 100) + '% ♔)');
+  paintBars(winProb * 100);
+  setEvalLabels(
+    formatEvalLabel(score, null),
+    score + ' cp (' + Math.round(winProb * 100) + '% ♔)'
+  );
 }
 
 function updateGameResult() {
-  if (game.in_checkmate()) {
+  if (abandonedBy) {
+    $('#gameResult, #gameResultRight').text(abandonText())
+      .removeClass().addClass('text-danger fw-bold');
+  } else if (game.in_checkmate()) {
     var winner = game.turn() === 'w' ? 'Nero' : 'Bianco';
     $('#gameResult, #gameResultRight').text('Scaccomatto! ' + winner + ' vince')
       .removeClass().addClass('text-danger fw-bold');
@@ -344,18 +3279,45 @@ function updateGameResult() {
   } else {
     $('#gameResult, #gameResultRight').text('');
   }
+  refreshReviewButton();
 }
 
 // ── MOVE HISTORY ──
 
 function recordMove(san) {
-  // Se eravamo indietro nel replay, tronca la storia da qui
+  var after = game.fen();
+  var before = after;
+  var undone = game.undo();
+  if (undone) {
+    before = game.fen();
+    var restored = game.move({
+      from: undone.from,
+      to: undone.to,
+      promotion: undone.promotion
+    });
+    if (!restored) game.load(after);
+  }
+  var fromView = fenHistory[viewIndex] === before;
   if (viewIndex < moveHistory.length) {
+    if (!fromView) {
+      if (before === fenHistory[moveHistory.length]) {
+        moveHistory.push(san);
+        fenHistory.push(after);
+        moveMarks.push('');
+        glyphMarks.push('');
+        updateMoveList();
+      }
+      return;
+    }
     moveHistory = moveHistory.slice(0, viewIndex);
     fenHistory = fenHistory.slice(0, viewIndex + 1);
+    moveMarks = moveMarks.slice(0, viewIndex);
+    glyphMarks = glyphMarks.slice(0, viewIndex);
   }
   moveHistory.push(san);
-  fenHistory.push(game.fen());
+  fenHistory.push(after);
+  moveMarks.push('');
+  glyphMarks.push('');
   viewIndex = moveHistory.length;
   isReplaying = false;
   updateMoveList();
@@ -368,11 +3330,19 @@ function updateMoveList() {
     var isWhite = (i % 2 === 0);
     if (isWhite) html += '<span class="move-num">' + moveNum + '.</span> ';
     var activeClass = (i + 1 === viewIndex) ? ' move-active' : '';
-    html += '<span class="move-san' + activeClass + '" data-idx="' + (i + 1) + '">' + moveHistory[i] + '</span> ';
+    var mark = '';
+    if (moveMarks[i] === 'inaccuracy' || moveMarks[i] === 'mistake' || moveMarks[i] === 'blunder') {
+      mark = ' move-' + moveMarks[i];
+    }
+    html += '<span class="move-san' + activeClass + mark + '" data-idx="' + (i + 1) + '">' + moveHistory[i] + '</span> ';
   }
   $('#moveList').html(html);
   $('#moveCounter').text(viewIndex + ' / ' + moveHistory.length);
-  // Auto-scroll in fondo
+  paintGlyphs();
+  paintArchivio();
+  paintApertura();
+  paintChiVince();
+  paintScacco();
   var el = document.getElementById('moveList');
   if (el) el.scrollTop = el.scrollHeight;
 }
@@ -382,17 +3352,26 @@ function goToMove(idx) {
   if (idx > moveHistory.length) idx = moveHistory.length;
   viewIndex = idx;
   isReplaying = (idx < moveHistory.length);
+  if (isReplaying) {
+    cancelSearch();
+    clearHint(true);
+    if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+  }
 
-  // Carica il FEN corrispondente
+  // replay-umano-taglia-linea: il FEN visto entra in game, ma non si esce dal
+  // replay. Indietro sul turno umano: drag e tap tagliano la linea (recordMove).
+  // Indietro sul turno del computer, in pausa, in abbandono o con entrambi i
+  // colori al computer: il motore non parte.
   var fen = fenHistory[idx];
+  selectedSquare = null;
+  lastMoveMark = null;
+  hidePromotionPicker();
   board.position(fen);
+  if (fen) {
+    try { game.load(fen); } catch (e) {}
+  }
   removeAllHighlights();
   updateMoveList();
-
-  // Se siamo all'ultima mossa, sincronizza game con la posizione reale
-  if (!isReplaying) {
-    game.load(fen);
-  }
 }
 
 // ── STOCKFISH ──
@@ -410,59 +3389,31 @@ function initStockfish() {
       var url = URL.createObjectURL(blob);
       stockfish = new Worker(url);
       stockfish.onmessage = function(e) {
-        var line = e.data.trim();
-        console.log('Stockfish:', line);
-        if (line.includes('uciok') || line.includes('readyok')) {
-          stockfishReady = true;
-          updateStatus('Stockfish pronto!', 'success');
-        }
-        if (line.includes('score cp')) {
-          var match = line.match(/score cp (\-?\d+)/);
-          if (match) {
-            var score = parseInt(match[1]);
-            if (game.turn() === 'b') score = -score;
-            updateAdvantageBar(score);
-          }
-        }
-        if (line.startsWith('bestmove')) {
-          var match = line.match(/bestmove\s+(\S+)/);
-          if (match) {
-            var uci = match[1];
-            var move = game.move(uci, {sloppy: true});
-            if (move) {
-              recordMove(move.san);
-              board.position(game.fen());
-              updateGameResult();
-              removeAllHighlights();
-              var hlClass = move.color === 'w' ? 'highlight-white' : 'highlight-black';
-              $('#myBoard .square-' + move.from).addClass(hlClass);
-              $('#myBoard .square-' + move.to).addClass(hlClass);
-              highlightThreatsAndUnprotected();
-              updateStatus('Computer ha mosso: ' + move.san, 'success');
-              if (move.captured) {
-                if (move.color === 'w') blackCaptured.push(move.captured);
-                else whiteCaptured.push(move.captured);
-                updateCapturedPieces();
-              }
-              if (game.game_over()) {
-                updateStatus(game.in_checkmate() ? 'Scaccomatto!' : 'Partita finita.', 'danger');
-              } else if (computerPlaysWhite && computerPlaysBlack && !isPaused) {
-                timeoutId = setTimeout(makeComputerMove, 800);
-              }
-            }
-          }
-        }
+        onStockfishLine(String(e.data || '').trim());
       };
       stockfish.onerror = function(err) { console.error('Worker error:', err); };
       stockfish.postMessage('uci');
       stockfish.postMessage('isready');
+      try {
+        hintStockfish = new Worker(url);
+        hintStockfish.onmessage = function(e) {
+          onHintStockfishLine(String(e.data || '').trim());
+        };
+        hintStockfish.onerror = function(err) { console.error('Hint worker error:', err); };
+        hintStockfish.postMessage('uci');
+        hintStockfish.postMessage('isready');
+      } catch (hintErr) {
+        hintStockfish = null;
+        hintStockfishReady = false;
+        console.error('Hint Stockfish non avviato:', hintErr);
+      }
     })
     .catch(function(err) { updateStatus('Errore caricamento Stockfish', 'danger'); });
 }
 
 function onDragStart(source, piece) {
-  if (isReplaying) return false;
-  if (game.game_over()) return false;
+  if (isSetupMode || promotionPending) return false;
+  if (matchOver()) return false;
   var turn = game.turn();
   if ((turn === 'w' && computerPlaysWhite) || (turn === 'b' && computerPlaysBlack)) return false;
   if (computerPlaysWhite && computerPlaysBlack) return false;
@@ -471,91 +3422,72 @@ function onDragStart(source, piece) {
 }
 
 function onDrop(source, target) {
-  var move = game.move({from: source, to: target, promotion: 'q'});
-  if (move === null) return 'snapback';
-  recordMove(move.san);
-  removeAllHighlights();
-  var hlClass = move.color === 'w' ? 'highlight-white' : 'highlight-black';
-  $('#myBoard .square-' + source).addClass(hlClass);
-  $('#myBoard .square-' + target).addClass(hlClass);
-  board.position(game.fen());
-  highlightThreatsAndUnprotected();
-  updateStatus('Tocca al computer...', 'info');
-  if (move.captured) {
-    if (move.color === 'w') blackCaptured.push(move.captured);
-    else whiteCaptured.push(move.captured);
-    updateCapturedPieces();
+  if (abandonedBy || isSetupMode || promotionPending) return 'snapback';
+  if (needsPromotion(source, target)) {
+    if (!promotionLegal(source, target)) return 'snapback';
+    showPromotionPicker(source, target);
+    return 'snapback';
   }
-  updateGameResult();
-  timeoutId = setTimeout(makeComputerMove, 600);
+  var move = game.move({from: source, to: target});
+  if (move === null) return 'snapback';
+  finishHumanMove(move);
 }
 
 function onSquareTap(square) {
-  if (isReplaying) return;
+  if (abandonedBy || promotionPending) return;
   var piece = game.get(square);
   var turn = game.turn();
   if (selectedSquare) {
     if (selectedSquare === square) {
       selectedSquare = null;
       removeAllHighlights();
-      highlightThreatsAndUnprotected();
       return;
     }
-    var move = game.move({ from: selectedSquare, to: square, promotion: 'q' });
-    if (move !== null) {
-      recordMove(move.san);
-      selectedSquare = null;
-      removeAllHighlights();
-      var hlClass = move.color === 'w' ? 'highlight-white' : 'highlight-black';
-      $('#myBoard .square-' + move.from).addClass(hlClass);
-      $('#myBoard .square-' + move.to).addClass(hlClass);
-      board.position(game.fen());
-      highlightThreatsAndUnprotected();
-      updateGameResult();
-      if (move.captured) {
-        if (move.color === 'w') blackCaptured.push(move.captured);
-        else whiteCaptured.push(move.captured);
-        updateCapturedPieces();
+    if (humanCanMove() && needsPromotion(selectedSquare, square) && promotionLegal(selectedSquare, square)) {
+      showPromotionPicker(selectedSquare, square);
+      return;
+    }
+    if (humanCanMove()) {
+      var move = game.move({from: selectedSquare, to: square});
+      if (move !== null) {
+        finishHumanMove(move);
+        return;
       }
-      updateStatus('Tocca al computer...', 'info');
-      timeoutId = setTimeout(makeComputerMove, 600);
-      return;
     }
-    if (piece && piece.color === humanColor) {
+    if (piece && ((piece.color === turn && humanCanMove()) || showLegal || showControlled)) {
       selectedSquare = square;
       highlightSelectedAndMoves(square);
       return;
     }
     selectedSquare = null;
     removeAllHighlights();
-    highlightThreatsAndUnprotected();
     return;
   }
-  if (!piece || piece.color !== humanColor) return;
-  if ((turn === 'w' && computerPlaysWhite) || (turn === 'b' && computerPlaysBlack)) return;
-  if (game.game_over()) return;
-  selectedSquare = square;
-  highlightSelectedAndMoves(square);
+  if (piece && piece.color === turn && humanCanMove()) {
+    selectedSquare = square;
+    highlightSelectedAndMoves(square);
+    return;
+  }
+  if (piece && (showLegal || showControlled)) {
+    selectedSquare = square;
+    highlightSelectedAndMoves(square);
+  }
 }
 
 function highlightSelectedAndMoves(square) {
+  selectedSquare = square;
   removeAllHighlights();
-  $('#myBoard .square-' + square).addClass('highlight-selected');
-  var moves = game.moves({ square: square, verbose: true });
-  moves.forEach(function(m) {
-    $('#myBoard .square-' + m.to).addClass('highlight-legal');
-  });
 }
 
 function makeComputerMove() {
+  if (isSetupMode || isPaused || isReplaying || matchOver()) return;
   var turn = game.turn();
-  if (game.game_over() || isPaused || isReplaying) return;
   if (!((turn === 'w' && computerPlaysWhite) || (turn === 'b' && computerPlaysBlack))) return;
   if (!stockfishReady) {
     timeoutId = setTimeout(makeComputerMove, 1200);
     return;
   }
-  updateStatus('Stockfish sta pensando...', 'warning');
+  clearHint(true);
   var depth, skill;
   if ((turn === 'w' && computerPlaysWhite) || (turn === 'b' && !computerPlaysWhite)) {
     depth = strengthLevel;
@@ -565,38 +3497,48 @@ function makeComputerMove() {
     skill = skillLevelBlack;
   }
   if (depth == 0) {
+    cancelSearch();
     var moves = game.moves({verbose: true});
-    if (moves.length > 0) {
-      var randomMove = moves[Math.floor(Math.random() * moves.length)];
-      game.move(randomMove);
-      recordMove(randomMove.san || randomMove);
-      board.position(game.fen());
-      removeAllHighlights();
-      $('#myBoard .square-' + randomMove.from).addClass('highlight-black');
-      $('#myBoard .square-' + randomMove.to).addClass('highlight-black');
-      updateStatus('Mossa random (depth 0)', 'warning');
-      if (computerPlaysWhite && computerPlaysBlack && !isPaused) {
-        timeoutId = setTimeout(makeComputerMove, 400);
-      }
-      return;
-    }
+    if (!moves.length) return;
+    var randomMove = moves[Math.floor(Math.random() * moves.length)];
+    var played = game.move(randomMove);
+    if (!played) return;
+    finishComputerMove(played, 'Mossa random (depth 0)', 'warning', 400);
+    return;
   }
-  stockfish.postMessage('position fen ' + game.fen());
-  stockfish.postMessage('setoption name Skill Level value ' + skill);
-  stockfish.postMessage('go depth ' + depth);
+  updateStatus('Stockfish sta pensando...', 'warning');
+  queueSearch({kind: 'game', depth: depth, skill: skill, fen: game.fen()});
 }
 
 function resetGame() {
+  cancelSearch();
+  abandonedBy = null;
+  coachModelQueue = [];
+  reviewTail = null;
+  hidePromotionPicker();
+  clearHint(true);
+  abortAnalysis(false);
+  clearCoachLog();
   game.reset();
   board.position('start');
   isPaused = true;
   isReplaying = false;
+  isSetupMode = false;
+  $('#setupContainer').addClass('d-none');
+  $('#myBoard').removeClass('d-none');
+  if (setupBoard) { setupBoard.destroy(); setupBoard = null; }
   moveHistory = [];
+  moveMarks = [];
+  glyphMarks = [];
+  lastAperturaText = '';
   fenHistory = [game.fen()];
   viewIndex = 0;
   startFen = 'startpos';
   updateMoveList();
   $('#pauseRestartButton').removeClass('d-none').text('Start');
+  selectedSquare = null;
+  lastMoveMark = null;
+  inspectSquare = null;
   removeAllHighlights();
   whiteCaptured = [];
   blackCaptured = [];
@@ -611,24 +3553,8 @@ function resetGame() {
 }
 
 function initBoard() {
-  board = Chessboard('myBoard', {
-    draggable: !isMobile,
-    position: 'start',
-    pieceTheme: buildPieceThemeFn(),
-    showNotation: true,
-    onDragStart: onDragStart,
-    onDrop: onDrop,
-    onSnapEnd: function() { board.position(game.fen()); },
-    orientation: boardOrientation
-  });
-  if (isMobile) {
-    $('#myBoard').on('click', '.square-55d63', function() {
-      if (isPaused || game.game_over()) return;
-      var classes = $(this).attr('class') || '';
-      var match = classes.match(/square-([a-h][1-8])/);
-      if (match) onSquareTap(match[1]);
-    });
-  }
+  board = Chessboard('myBoard', boardOptions('start'));
+  startPieceImgRetryWatch();
 }
 
 function handleModeChange(mode) {
@@ -637,11 +3563,13 @@ function handleModeChange(mode) {
   boardOrientation = mode === 'white' ? 'black' : 'white';
   humanColor = computerPlaysWhite ? 'b' : 'w';
   if (board) board.orientation(boardOrientation);
+  syncAnimWeather();
+  $('#strengthLabel').text(mode === 'black' ? 'Stockfish Nero' : 'Stockfish Bianco');
 }
 
-// ── SAVE / LOAD / DELETE ──
-
 function getGameResult() {
+  if (abandonedBy === 'w') return '0-1';
+  if (abandonedBy === 'b') return '1-0';
   if (game.in_checkmate()) {
     return game.turn() === 'w' ? '0-1' : '1-0';
   }
@@ -652,17 +3580,15 @@ function getGameResult() {
 function saveCurrentGame() {
   var name = prompt('Nome della partita:', 'Partita ' + new Date().toLocaleString('it'));
   if (!name) return;
-
-  var pgn = game.pgn();
+  var pgn = pgnForSave();
   var result = getGameResult();
-
   updateStatus('Salvataggio...', 'warning');
   google.script.run
     .withSuccessHandler(function(res) {
       updateStatus(res.message, 'success');
     })
     .withFailureHandler(function(err) {
-      updateStatus('Errore: ' + err.message, 'danger');
+      updateStatus('Errore: ' + (err && err.message ? err.message : err), 'danger');
     })
     .saveGame(name, pgn, result, startFen);
 }
@@ -671,37 +3597,7 @@ function loadGameList() {
   var container = $('#gameListContainer');
   container.toggleClass('d-none');
   if (container.hasClass('d-none')) return;
-
-  $('#gameListSpinner').removeClass('d-none');
-  $('#gameList').empty();
-
-  google.script.run
-    .withSuccessHandler(function(games) {
-      $('#gameListSpinner').addClass('d-none');
-      if (!games || games.length === 0) {
-        $('#gameList').html('<div class="text-muted small">Nessuna partita salvata.</div>');
-        return;
-      }
-      var html = '';
-      games.forEach(function(g) {
-        html += '<div class="game-item" data-id="' + g.id + '">';
-        html += '<div class="game-item-info">';
-        html += '<strong class="small">' + g.name + '</strong>';
-        html += '<span class="text-muted" style="font-size:10px">' + g.date + ' · ' + g.result + '</span>';
-        html += '</div>';
-        html += '<div class="game-item-actions">';
-        html += '<button class="btn btn-sm btn-outline-primary load-game-btn" title="Carica">▶</button>';
-        html += '<button class="btn btn-sm btn-outline-danger delete-game-btn" title="Elimina">✕</button>';
-        html += '</div>';
-        html += '</div>';
-      });
-      $('#gameList').html(html);
-    })
-    .withFailureHandler(function(err) {
-      $('#gameListSpinner').addClass('d-none');
-      $('#gameList').html('<div class="text-danger small">Errore: ' + err.message + '</div>');
-    })
-    .listGames();
+  fetchGameList();
 }
 
 function loadGameById(id) {
@@ -712,68 +3608,85 @@ function loadGameById(id) {
         updateStatus('Partita non trovata.', 'danger');
         return;
       }
-
-      // Reset
-      game = new Chess();
-      if (g.startFen && g.startFen !== 'startpos') {
-        game.load(g.startFen);
+      var pgn = g.pgn ? String(g.pgn) : '';
+      var fen0 = (g.startFen && g.startFen !== 'startpos') ? String(g.startFen) : '';
+      var trial = new Chess();
+      if (pgn.trim()) {
+        if (!trial.load_pgn(pgn)) {
+          updateStatus('PGN non valido. Scacchiera non aggiornata.', 'danger');
+          return;
+        }
+      } else if (fen0) {
+        if (!trial.load(fen0)) {
+          updateStatus('FEN iniziale non valido. Scacchiera non aggiornata.', 'danger');
+          return;
+        }
       }
+      cancelSearch();
+      hidePromotionPicker();
+      clearHint(true);
+      abortAnalysis(false);
+      if (isSetupMode) {
+        isSetupMode = false;
+        $('#setupContainer').addClass('d-none');
+        $('#myBoard').removeClass('d-none');
+        if (setupBoard) { setupBoard.destroy(); setupBoard = null; }
+      }
+      game = trial;
       startFen = g.startFen || 'startpos';
-
-      // Carica PGN
-      if (g.pgn) {
-        game.load_pgn(g.pgn);
-      }
-
-      // Ricostruisci la storia mosse/FEN
-      var tempGame = new Chess();
-      if (g.startFen && g.startFen !== 'startpos') {
-        tempGame.load(g.startFen);
-      }
-      fenHistory = [tempGame.fen()];
+      var replay = new Chess();
+      var hdr = trial.header ? trial.header() : null;
+      if (hdr && hdr.SetUp === '1' && hdr.FEN) replay.load(hdr.FEN);
+      else if (fen0) replay.load(fen0);
+      fenHistory = [replay.fen()];
       moveHistory = [];
-
-      var history = game.history();
-      history.forEach(function(san) {
-        tempGame.move(san);
-        moveHistory.push(san);
-        fenHistory.push(tempGame.fen());
+      moveMarks = [];
+      glyphMarks = [];
+      whiteCaptured = [];
+      blackCaptured = [];
+      trial.history({verbose: true}).forEach(function(m) {
+        var played = replay.move(m.san);
+        moveHistory.push(m.san);
+        fenHistory.push(played ? replay.fen() : trial.fen());
+        if (m.captured) {
+          if (m.color === 'w') blackCaptured.push(m.captured);
+          else whiteCaptured.push(m.captured);
+        }
       });
-
       viewIndex = moveHistory.length;
       isReplaying = false;
       isPaused = true;
-
+      abandonedBy = null;
       board.position(game.fen());
       board.orientation(boardOrientation);
-
-      whiteCaptured = [];
-      blackCaptured = [];
+      selectedSquare = null;
+      lastMoveMark = null;
+      applyActiveOverlays();
       updateCapturedPieces();
       updateAdvantageBar(0);
       updateMoveList();
       updateGameResult();
       $('#pauseRestartButton').text('Start');
-      updateStatus('Partita caricata: ' + g.name, 'success');
+      updateStatus('Partita caricata: ' + (g.name == null ? '' : String(g.name)), 'success');
       $('#gameListContainer').addClass('d-none');
     })
     .withFailureHandler(function(err) {
-      updateStatus('Errore: ' + err.message, 'danger');
+      updateStatus('Errore: ' + (err && err.message ? err.message : err), 'danger');
     })
-    .loadGame(id);
+    .loadGame(String(id));
 }
 
 function deleteGameById(id) {
   if (!confirm('Eliminare questa partita?')) return;
   google.script.run
     .withSuccessHandler(function(res) {
-      updateStatus(res.message, res.success ? 'success' : 'danger');
-      if (res.success) loadGameList(); // Ricarica lista
+      updateStatus(res && res.message ? res.message : '', res && res.success ? 'success' : 'danger');
+      if (res && res.success) fetchGameList();
     })
     .withFailureHandler(function(err) {
-      updateStatus('Errore: ' + err.message, 'danger');
+      updateStatus('Errore: ' + (err && err.message ? err.message : err), 'danger');
     })
-    .deleteGame(id);
+    .deleteGame(String(id));
 }
 
 // ── INIT ──
@@ -782,8 +3695,12 @@ $(document).ready(function() {
   updateStatus('Inizializzazione...', 'info');
   initStockfish();
   initBoard();
+  bindBoardClicks();
   fenHistory = [game.fen()];
   updateMoveList();
+  loadOverlaySwitches();
+  bindOverlaySwitches();
+  applyActiveOverlays();
 
   $('#boardThemeSelect').on('change', function() { applyBoardTheme($(this).val()); });
   applyBoardTheme('classic');
@@ -792,21 +3709,12 @@ $(document).ready(function() {
   // (white theme, black theme, asymmetric toggle). Called from all three
   // piece-related controls so they share one code path.
   function rebuildBoardWithCurrentTheme() {
-    board = Chessboard('myBoard', {
-      draggable: true,
-      position: game.fen(),
-      pieceTheme: buildPieceThemeFn(),
-      showNotation: true,
-      onDragStart: onDragStart,
-      onDrop: onDrop,
-      onSnapEnd: function() { board.position(game.fen()); },
-      orientation: boardOrientation
-    });
-    highlightThreatsAndUnprotected();
+    board = Chessboard('myBoard', boardOptions(game.fen()));
+    applyActiveOverlays();
     updateCapturedPieces();
   }
 
-  $('#pieceThemeSelect').on('change', function() {
+    $('#pieceThemeSelect').on('change', function() {
     currentPieceTheme = pieceThemes[$(this).val()] || pieceThemes['cburnett'];
     rebuildBoardWithCurrentTheme();
   });
@@ -832,7 +3740,12 @@ $(document).ready(function() {
   });
 
   $('#setupButton').click(function() {
+    cancelSearch();
+    hidePromotionPicker();
+    clearHint(true);
+    abortAnalysis(false);
     isSetupMode = true;
+    $('#setupTurn').val(game.turn() === 'b' ? 'b' : 'w');
     $('#myBoard').addClass('d-none');
     $('#setupContainer').removeClass('d-none');
     updateStatus('Modalità setup – trascina i pezzi', 'warning');
@@ -850,31 +3763,57 @@ $(document).ready(function() {
   });
 
   $('#applySetup').click(function() {
-    var positionObj = setupBoard.position();
-    game.clear();
-    for (var square in positionObj) {
-      if (positionObj.hasOwnProperty(square)) {
-        var pieceStr = positionObj[square];
-        if (pieceStr && pieceStr.length === 2) {
-          game.put({type: pieceStr[1].toLowerCase(), color: pieceStr[0]}, square);
-        }
-      }
+    if (!setupBoard) {
+      updateStatus('Editor non pronto.', 'danger');
+      return;
     }
-    var newFen = game.fen();
-    game.load(newFen);
-    startFen = newFen;
-    fenHistory = [newFen];
+    var positionObj = setupBoard.position();
+    var trial = new Chess();
+    trial.clear();
+    var rejected = [];
+    for (var square in positionObj) {
+      if (!positionObj.hasOwnProperty(square)) continue;
+      var pieceStr = positionObj[square];
+      if (!pieceStr || pieceStr.length !== 2) continue;
+      var ok = trial.put({type: pieceStr[1].toLowerCase(), color: pieceStr[0]}, square);
+      if (!ok) rejected.push(square);
+    }
+    if (rejected.length) {
+      updateStatus('Pezzo non accettato in ' + rejected.join(', ') + '. Il setup resta aperto.', 'danger');
+      return;
+    }
+    var turn = $('#setupTurn').val() === 'b' ? 'b' : 'w';
+    var fen = trial.fen().split(' ')[0] + ' ' + turn + ' ' + castlingFromPosition(positionObj) + ' - 0 1';
+    if (!trial.load(fen)) {
+      updateStatus('Posizione non valida. Il setup resta aperto.', 'danger');
+      return;
+    }
+    game = trial;
+    startFen = (fen === 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') ? 'startpos' : fen;
+    fenHistory = [game.fen()];
     moveHistory = [];
+    moveMarks = [];
+    glyphMarks = [];
     viewIndex = 0;
+    isReplaying = false;
     updateMoveList();
-    board.position(newFen);
+    board.position(game.fen());
     board.orientation(boardOrientation);
+    selectedSquare = null;
+    lastMoveMark = null;
+    whiteCaptured = [];
+    blackCaptured = [];
+    updateCapturedPieces();
+    applyActiveOverlays();
     $('#setupContainer').addClass('d-none');
     $('#myBoard').removeClass('d-none');
     isSetupMode = false;
+    abandonedBy = null;
+    paintChiVince();
     updateStatus('Posizione applicata!', 'success');
     setupBoard.destroy();
     setupBoard = null;
+    updateGameResult();
     timeoutId = setTimeout(makeComputerMove, 400);
   });
 
@@ -883,11 +3822,15 @@ $(document).ready(function() {
     $('#myBoard').removeClass('d-none');
     isSetupMode = false;
     updateStatus('Setup annullato.', 'warning');
-    setupBoard.destroy();
+    if (setupBoard) setupBoard.destroy();
     setupBoard = null;
   });
 
   $('#playerMode').change(function() {
+    cancelSearch();
+    hidePromotionPicker();
+    clearHint(true);
+    abortAnalysis(false);
     var mode = $(this).val();
     handleModeChange(mode);
     isPaused = true;
@@ -897,10 +3840,15 @@ $(document).ready(function() {
     } else {
       $('#secondStrengthContainer').addClass('d-none');
     }
+    refreshReviewButton();
   });
 
   $('#pauseRestartButton').click(function() {
-    // Se in replay, torna alla fine prima
+    if (abandonedBy) {
+      updateStatus(abandonText(), 'danger');
+      refreshReviewButton();
+      return;
+    }
     if (isReplaying) {
       goToMove(moveHistory.length);
       game.load(fenHistory[moveHistory.length]);
@@ -909,16 +3857,19 @@ $(document).ready(function() {
       isPaused = false;
       $('#pauseRestartButton').text('Pause');
       updateStatus('Partita ripresa!', 'success');
-      timeoutId = setTimeout(makeComputerMove, 400);
+      if (computerToMove()) timeoutId = setTimeout(makeComputerMove, 400);
+      else maybeAutoHint();
     } else {
       isPaused = true;
-      if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+      cancelSearch();
+      abortAnalysis(false);
       updateStatus('Partita in pausa.', 'warning');
       $('#pauseRestartButton').text('Start');
     }
+    refreshReviewButton();
   });
 
-  $('#strengthSlider').on('input', function() {
+    $('#strengthSlider').on('input', function() {
     strengthLevel = parseInt($(this).val());
     $('#strengthValue').text(strengthLevel);
   });
@@ -941,6 +3892,8 @@ $(document).ready(function() {
     currentSeed = Math.floor(Math.random() * 100000) + 1;
     $('#seedInput').val(currentSeed);
   });
+  // Ogni apertura della pagina: stesso gesto del pulsante Casuale, non 0 e non un valore salvato.
+  $('#randomSeedButton').click();
   $('#resetButton').click(function() {
     handleModeChange($('#playerMode').val());
     resetGame();
@@ -964,14 +3917,542 @@ $(document).ready(function() {
 
   // Deleghe click per carica / elimina
   $('#gameList').on('click', '.load-game-btn', function() {
-    var id = $(this).closest('.game-item').data('id');
-    loadGameById(id);
+    loadGameById($(this).closest('.game-item').attr('data-id'));
   });
   $('#gameList').on('click', '.delete-game-btn', function() {
-    var id = $(this).closest('.game-item').data('id');
-    deleteGameById(id);
+    deleteGameById($(this).closest('.game-item').attr('data-id'));
   });
+  $('#mossaMiglioreBtn').on('click', toggleHint);
+  $('#coachToggle').on('click', function() {
+    var panel = $('#coachPanel');
+    var willOpen = panel.hasClass('d-none');
+    panel.toggleClass('d-none');
+    $(this).attr('aria-expanded', willOpen ? 'true' : 'false');
+    $(this).toggleClass('active', willOpen);
+    if (willOpen) {
+      if (coachModelState === 'failed') tellModelFailed();
+      else if (coachModelState !== 'ready') ensureCoachModel();
+    }
+  });
+  $('#resignButton').on('click', abandonGame);
+  $('#reviewBtn').on('click', startReview);
+  $('#promotionPicker').on('click', 'button[data-promo]', function(ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    choosePromotion(String($(this).attr('data-promo') || ''));
+  });
+  refreshReviewButton();
 
   handleModeChange('black');
 });
+
+// Telecomando: due modi, scambiati solo dal tenuto di OK (500 ms). Il keyup dell'OK lungo non clicca.
+// Scacchiera: frecce in senso visivo, clamp a1-h8, paint, OK breve = onSquareTap.
+// Impostazioni: su/giù un controllo visibile, ordine di documento. Sinistra/destra sfoglia quel controllo.
+// Canale breve (keyup, se il tenuto non è scattato) = Skill (#skillSlider).
+// Canale tenuto 500 ms = Depth (#strengthSlider): + avanza, − cala; i repeat dopo la soglia continuano.
+// Il keyup del tenuto non muove la Skill. Il breve non parte sul keydown. Il volume resta alla TV.
+// canale-tenuto-depth. Non chiama scacchiTvMoveCursor.
+(function () {
+  var OK_MS = 500;
+  var MARK = 'due-modi-ok-tenuto';
+  var mode = 'board';
+  var lastSettingsId = '';
+  var held = {ok: false};
+  var okTimer = 0;
+  var okLong = false;
+  var chTimer = 0;
+  var chLong = false;
+  var chDir = 0;
+  var chHeld = false;
+  var swallowClick = false;
+  var seenDown = null;
+  var seenUp = null;
+
+  function stamp() {
+    window.__scacchiTvNav = MARK;
+    window.__scacchiTvMode = mode;
+    if (document.documentElement) document.documentElement.setAttribute('data-tv-nav', MARK);
+  }
+  stamp();
+
+  function eat(e) {
+    if (!e) return;
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+  }
+
+  function matchKey(e, name, codes) {
+    if (e.key === name) return true;
+    var c = e.keyCode || e.which || 0;
+    var i;
+    for (i = 0; i < codes.length; i++) if (codes[i] === c) break;
+    if (i >= codes.length) return false;
+    if (!e.key || e.key === 'Unidentified' || e.key === 'Process') return true;
+    return false;
+  }
+
+  function isDown(e) { return matchKey(e, 'ArrowDown', [40, 20]); }
+  function isRight(e) { return matchKey(e, 'ArrowRight', [39, 22]); }
+  function isUp(e) { return matchKey(e, 'ArrowUp', [38, 19]); }
+  function isLeft(e) { return matchKey(e, 'ArrowLeft', [37, 21]); }
+  function isOk(e) { return matchKey(e, 'Enter', [13, 23]) || e.key === 'NumpadEnter'; }
+  function isVolumeUp(e) { return e.key === 'VolumeUp' || e.key === 'AudioVolumeUp' || (e.keyCode || e.which) === 24; }
+  function isVolumeDown(e) { return e.key === 'VolumeDown' || e.key === 'AudioVolumeDown' || (e.keyCode || e.which) === 25; }
+  function isChannelUp(e) { return e.key === 'ChannelUp' || (e.keyCode || e.which) === 166; }
+  function isChannelDown(e) { return e.key === 'ChannelDown' || (e.keyCode || e.which) === 167; }
+
+  function shown(el) {
+    if (!el || el.nodeType !== 1) return false;
+    if (el.disabled) return false;
+    if (el.classList && el.classList.contains('d-none')) return false;
+    if (el.closest && el.closest('.d-none')) return false;
+    if (el.hidden) return false;
+    var s = window.getComputedStyle(el);
+    return s.display !== 'none' && s.visibility !== 'hidden';
+  }
+
+  function isCoach(el) {
+    if (!el || el.nodeType !== 1) return false;
+    var id = el.id || '';
+    if (id === 'coachToggle' || id === 'coachPanel' || id === 'coachLog' || id === 'reviewBtn') return true;
+    if (el.classList && (el.classList.contains('coach-panel') || el.classList.contains('coach-note') || el.classList.contains('coach-log'))) return true;
+    if (el.closest && (el.closest('#coachPanel') || el.closest('.coach-panel'))) return true;
+    var text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (el.tagName === 'BUTTON' && text === 'Consigli') return true;
+    return false;
+  }
+
+  function visibleControls() {
+    var nodes = document.querySelectorAll('button, input[type="range"], select, input[type="checkbox"]');
+    var boardEl = document.getElementById('myBoard');
+    var out = [];
+    var i, el;
+    for (i = 0; i < nodes.length; i++) {
+      el = nodes[i];
+      if (el.id === 'myBoard') continue;
+      if (boardEl && boardEl.contains(el)) continue;
+      if (isCoach(el)) continue;
+      if (!shown(el)) continue;
+      out.push(el);
+    }
+    return out;
+  }
+
+  function promoButtons() {
+    var promo = document.getElementById('promotionPicker');
+    var nodes, out, i;
+    if (!promo || !shown(promo)) return [];
+    nodes = promo.querySelectorAll('button');
+    out = [];
+    for (i = 0; i < nodes.length; i++) if (shown(nodes[i])) out.push(nodes[i]);
+    return out;
+  }
+
+  function orientation() {
+    var o = '';
+    try {
+      if (typeof board !== 'undefined' && board && typeof board.orientation === 'function') o = board.orientation();
+    } catch (err) {}
+    if (o !== 'black' && o !== 'white') {
+      o = (typeof boardOrientation !== 'undefined' && boardOrientation) ? boardOrientation : 'white';
+    }
+    return o === 'black' ? 'black' : 'white';
+  }
+
+  function paintSquare() {
+    var old = document.querySelectorAll('#myBoard .tv-sq');
+    var sq, el, i;
+    for (i = 0; i < old.length; i++) old[i].classList.remove('tv-sq');
+    if (mode !== 'board') return;
+    sq = window.__scacchiTvSquare || 'e2';
+    if (!/^[a-h][1-8]$/.test(sq)) sq = 'e2';
+    window.__scacchiTvSquare = sq;
+    el = document.querySelector('#myBoard .square-' + sq);
+    if (el) el.classList.add('tv-sq');
+  }
+
+  function clearSquare() {
+    var old = document.querySelectorAll('#myBoard .tv-sq');
+    var i;
+    for (i = 0; i < old.length; i++) old[i].classList.remove('tv-sq');
+  }
+
+  function moveSquareVisual(dir) {
+    var sq = window.__scacchiTvSquare || 'e2';
+    var file = sq.charCodeAt(0) - 97;
+    var rank = parseInt(sq.charAt(1), 10);
+    var black = orientation() === 'black';
+    var dFile = 0;
+    var dRank = 0;
+    if (isNaN(file) || isNaN(rank)) { file = 4; rank = 2; }
+    if (dir === 'up') dRank = black ? -1 : 1;
+    else if (dir === 'down') dRank = black ? 1 : -1;
+    else if (dir === 'left') dFile = black ? 1 : -1;
+    else if (dir === 'right') dFile = black ? -1 : 1;
+    file = Math.max(0, Math.min(7, file + dFile));
+    rank = Math.max(1, Math.min(8, rank + dRank));
+    window.__scacchiTvSquare = String.fromCharCode(97 + file) + rank;
+    paintSquare();
+  }
+
+  function clearFocusMark() {
+    var old = document.querySelectorAll('.tv-remote-focus');
+    var i;
+    for (i = 0; i < old.length; i++) old[i].classList.remove('tv-remote-focus');
+  }
+
+  function focusEl(el) {
+    if (!el) return;
+    try { el.focus({preventScroll: true}); }
+    catch (err) { try { el.focus(); } catch (err2) {} }
+  }
+
+  function focusControl(el) {
+    var row, marked;
+    clearFocusMark();
+    if (!el) return;
+    row = null;
+    if (el.closest) {
+      if (el.type === 'checkbox') row = el.closest('.form-check');
+      else if (el.type === 'range') row = el.closest('.slider-row');
+    }
+    marked = row || el;
+    marked.classList.add('tv-remote-focus');
+    focusEl(el);
+    try { marked.scrollIntoView({block: 'nearest', inline: 'nearest'}); }
+    catch (err) { try { el.scrollIntoView(true); } catch (err2) {} }
+    if (el.id) lastSettingsId = el.id;
+    var prev = document.querySelectorAll('[data-tv-last]');
+    var i;
+    for (i = 0; i < prev.length; i++) prev[i].removeAttribute('data-tv-last');
+    el.setAttribute('data-tv-last', '1');
+  }
+
+  function indexOf(list, el) {
+    var i;
+    for (i = 0; i < list.length; i++) if (list[i] === el) return i;
+    return -1;
+  }
+
+  function stepSettings(dir) {
+    var list = visibleControls();
+    var ae, cur, next, i;
+    if (!list.length) return;
+    ae = document.activeElement;
+    cur = indexOf(list, ae);
+    if (cur < 0 && ae) {
+      for (i = 0; i < list.length; i++) {
+        if (list[i].contains && list[i].contains(ae)) { cur = i; break; }
+      }
+    }
+    if (cur < 0) next = dir < 0 ? list.length - 1 : 0;
+    else next = (cur + dir + list.length) % list.length;
+    focusControl(list[next]);
+  }
+
+  function nudgeRange(el, dir) {
+    var step = Number(el.step);
+    var min, max, next;
+    if (!step || step < 0 || isNaN(step)) step = 1;
+    min = el.min === '' ? -Infinity : Number(el.min);
+    max = el.max === '' ? Infinity : Number(el.max);
+    next = Number(el.value);
+    if (isNaN(next)) next = isFinite(min) ? min : 0;
+    next += dir < 0 ? -step : step;
+    if (isFinite(max) && next > max) next = max;
+    if (isFinite(min) && next < min) next = min;
+    if (Math.abs(next - Math.round(next)) < 1e-6) next = Math.round(next);
+    el.value = String(next);
+    el.dispatchEvent(new Event('input', {bubbles: true}));
+    el.dispatchEvent(new Event('change', {bubbles: true}));
+    return next;
+  }
+
+  function nudgeNamedSlider(id, dir) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    nudgeRange(el, dir);
+  }
+
+  function nudgeSelect(el, dir) {
+    var opts = el.options;
+    var n = opts.length;
+    var i = el.selectedIndex;
+    var step = dir < 0 ? -1 : 1;
+    var k, j;
+    if (!n) return;
+    if (i < 0) i = dir < 0 ? 0 : n - 1;
+    for (k = 1; k <= n; k++) {
+      j = i + step * k;
+      while (j < 0) j += n;
+      while (j >= n) j -= n;
+      if (opts[j].disabled) continue;
+      if (j === i) return;
+      el.selectedIndex = j;
+      el.dispatchEvent(new Event('change', {bubbles: true}));
+      return;
+    }
+  }
+
+  function toggleCheck(el) {
+    el.checked = !el.checked;
+    el.dispatchEvent(new Event('input', {bubbles: true}));
+    el.dispatchEvent(new Event('change', {bubbles: true}));
+  }
+
+  function nudgeFocused(dir) {
+    var el = document.activeElement;
+    if (!el || el === document.body || el === document.documentElement) {
+      if (lastSettingsId) el = document.getElementById(lastSettingsId);
+    }
+    if (!el || el.nodeType !== 1) return;
+    if (el.tagName === 'SELECT') {
+      nudgeSelect(el, dir);
+      focusControl(el);
+      return;
+    }
+    if (el.tagName === 'INPUT' && el.type === 'range') {
+      nudgeRange(el, dir);
+      focusControl(el);
+      return;
+    }
+    if (el.tagName === 'INPUT' && el.type === 'checkbox') {
+      toggleCheck(el);
+      focusControl(el);
+    }
+  }
+
+  function revealBoard() {
+    var setup = document.getElementById('setupContainer');
+    var boardEl = document.getElementById('myBoard');
+    var cancel;
+    if (setup && shown(setup)) {
+      cancel = document.getElementById('cancelSetup');
+      if (cancel) cancel.click();
+      else setup.classList.add('d-none');
+    }
+    if (boardEl) boardEl.classList.remove('d-none');
+  }
+
+  function enterBoard() {
+    mode = 'board';
+    window.__scacchiTvMode = 'board';
+    clearFocusMark();
+    revealBoard();
+    var boardEl = document.getElementById('myBoard');
+    if (!window.__scacchiTvSquare) window.__scacchiTvSquare = 'e2';
+    if (boardEl) {
+      boardEl.setAttribute('tabindex', '0');
+      focusEl(boardEl);
+      try { boardEl.scrollIntoView({block: 'nearest', inline: 'nearest'}); } catch (err) {}
+    }
+    paintSquare();
+    stamp();
+  }
+
+  function enterSettings() {
+    var list = visibleControls();
+    var pick = null;
+    var i;
+    mode = 'settings';
+    window.__scacchiTvMode = 'settings';
+    clearSquare();
+    if (!list.length) { stamp(); return; }
+    for (i = 0; i < list.length; i++) {
+      if (list[i].getAttribute('data-tv-last') === '1') { pick = list[i]; break; }
+    }
+    if (!pick && lastSettingsId) {
+      for (i = 0; i < list.length; i++) if (list[i].id === lastSettingsId) { pick = list[i]; break; }
+    }
+    focusControl(pick || list[0]);
+    stamp();
+  }
+
+  function toggleMode() {
+    swallowClick = true;
+    setTimeout(function () { swallowClick = false; }, 800);
+    if (mode === 'board') enterSettings();
+    else enterBoard();
+  }
+
+  function stepPromo(dir) {
+    var list = promoButtons();
+    var cur, next;
+    if (!list.length) return;
+    cur = indexOf(list, document.activeElement);
+    if (cur < 0) next = dir < 0 ? list.length - 1 : 0;
+    else next = (cur + dir + list.length) % list.length;
+    focusControl(list[next]);
+  }
+
+  function shortOk() {
+    var promo = promoButtons();
+    var ae, i;
+    if (promo.length) {
+      ae = document.activeElement;
+      for (i = 0; i < promo.length; i++) if (promo[i] === ae) { ae.click(); return; }
+      focusControl(promo[0]);
+      promo[0].click();
+      return;
+    }
+    if (mode === 'board') {
+      if (typeof onSquareTap === 'function') onSquareTap(window.__scacchiTvSquare || 'e2');
+      paintSquare();
+      return;
+    }
+    ae = document.activeElement;
+    if (!ae || ae === document.body || ae === document.documentElement) {
+      if (lastSettingsId) ae = document.getElementById(lastSettingsId);
+    }
+    if (!ae || ae.nodeType !== 1) return;
+    if (ae.tagName === 'BUTTON') { ae.click(); return; }
+    if (ae.tagName === 'INPUT' && ae.type === 'checkbox') toggleCheck(ae);
+  }
+
+  function onArrow(dir) {
+    var promo = promoButtons();
+    if (promo.length) {
+      stepPromo(dir === 'up' || dir === 'left' ? -1 : 1);
+      return;
+    }
+    if (mode === 'board') {
+      moveSquareVisual(dir);
+      return;
+    }
+    if (dir === 'up') stepSettings(-1);
+    else if (dir === 'down') stepSettings(1);
+    else nudgeFocused(dir === 'left' ? -1 : 1);
+  }
+
+  function onKeyDown(e) {
+    var dir;
+    if (seenDown === e) return;
+    seenDown = e;
+    if (isVolumeUp(e) || isVolumeDown(e)) {
+      eat(e);
+      return;
+    }
+    if (isChannelUp(e) || isChannelDown(e)) {
+      var dir = isChannelUp(e) ? 1 : -1;
+      eat(e);
+      if (e.repeat) {
+        if (chLong) nudgeNamedSlider('strengthSlider', dir);
+        return;
+      }
+      if (chHeld) return;
+      chHeld = true;
+      chLong = false;
+      chDir = dir;
+      clearTimeout(chTimer);
+      chTimer = setTimeout(function () {
+        chLong = true;
+        nudgeNamedSlider('strengthSlider', chDir);
+      }, OK_MS);
+      return;
+    }
+    if (isUp(e) || isDown(e) || isLeft(e) || isRight(e)) {
+      eat(e);
+      if (isUp(e)) dir = 'up';
+      else if (isDown(e)) dir = 'down';
+      else if (isLeft(e)) dir = 'left';
+      else dir = 'right';
+      onArrow(dir);
+      return;
+    }
+    if (isOk(e)) {
+      eat(e);
+      if (e.repeat || held.ok) return;
+      held.ok = true;
+      okLong = false;
+      clearTimeout(okTimer);
+      okTimer = setTimeout(function () {
+        okLong = true;
+        toggleMode();
+      }, OK_MS);
+    }
+  }
+
+  function onKeyUp(e) {
+    if (seenUp === e) return;
+    seenUp = e;
+    if (isChannelUp(e) || isChannelDown(e)) {
+      eat(e);
+      chHeld = false;
+      clearTimeout(chTimer);
+      chTimer = 0;
+      if (chLong) {
+        chLong = false;
+        return;
+      }
+      nudgeNamedSlider('skillSlider', isChannelUp(e) ? 1 : -1);
+      return;
+    }
+    if (isUp(e) || isDown(e) || isLeft(e) || isRight(e) || isVolumeUp(e) || isVolumeDown(e)) {
+      eat(e);
+      return;
+    }
+    if (!isOk(e)) return;
+    eat(e);
+    held.ok = false;
+    clearTimeout(okTimer);
+    if (okLong) {
+      okLong = false;
+      return;
+    }
+    shortOk();
+  }
+
+  function onPress(e) {
+    if (isOk(e) || isUp(e) || isDown(e) || isLeft(e) || isRight(e) || isVolumeUp(e) || isVolumeDown(e) || isChannelUp(e) || isChannelDown(e)) eat(e);
+  }
+
+  function onClick(e) {
+    if (!swallowClick) return;
+    eat(e);
+  }
+
+  function watchBoard() {
+    var boardEl = document.getElementById('myBoard');
+    if (!boardEl || boardEl.getAttribute('data-tv-watch')) return;
+    boardEl.setAttribute('data-tv-watch', '1');
+    try {
+      new MutationObserver(function () {
+        var sq;
+        if (mode !== 'board') return;
+        sq = window.__scacchiTvSquare;
+        if (!sq) return;
+        if (!boardEl.querySelector('.square-' + sq + '.tv-sq')) paintSquare();
+      }).observe(boardEl, {childList: true, subtree: true, attributes: true, attributeFilter: ['class']});
+    } catch (err) {}
+  }
+
+  window.scacchiTvOnArrow = function (key) {
+    if (key === 'ArrowUp') onArrow('up');
+    else if (key === 'ArrowDown') onArrow('down');
+    else if (key === 'ArrowLeft') onArrow('left');
+    else if (key === 'ArrowRight') onArrow('right');
+  };
+  window.scacchiTvOnOk = function () { shortOk(); };
+  window.scacchiTvEnterBoard = enterBoard;
+  window.scacchiTvEnterSettings = enterSettings;
+
+  function boot() {
+    watchBoard();
+    enterBoard();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  setTimeout(function () { stamp(); if (mode === 'board' && window.__scacchiTv) enterBoard(); }, 800);
+  setTimeout(stamp, 2000);
+
+  window.addEventListener('keydown', onKeyDown, true);
+  document.addEventListener('keydown', onKeyDown, true);
+  window.addEventListener('keyup', onKeyUp, true);
+  document.addEventListener('keyup', onKeyUp, true);
+  window.addEventListener('keypress', onPress, true);
+  document.addEventListener('click', onClick, true);
+  window.addEventListener('click', onClick, true);
+})();
 </script>
