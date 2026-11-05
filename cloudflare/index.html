@@ -2313,12 +2313,34 @@ function statusAfterHumanMove() {
   updateStatus(game.turn() === 'w' ? 'Tocca al Bianco' : 'Tocca al Nero', 'info');
 }
 
-function noteCapture(move) {
-  if (!move || !move.captured) return;
-  if (move.color === 'w') blackCaptured.push(move.captured);
-  else whiteCaptured.push(move.captured);
+function syncCapturedFromHistory() {
+  // Catture derivate dalla linea fino a viewIndex (non contatore incrementale),
+  // così indietro/avanti nella storia aggiorna lista e conteggio.
+  whiteCaptured = [];
+  blackCaptured = [];
+  var baseFen = (fenHistory && fenHistory.length) ? fenHistory[0] : '';
+  var temp = null;
+  try {
+    temp = baseFen ? new Chess(baseFen) : new Chess();
+  } catch (e) {
+    try { temp = new Chess(); } catch (e2) { updateCapturedPieces(); return; }
+  }
+  var limit = Math.max(0, Math.min(viewIndex | 0, (moveHistory && moveHistory.length) || 0));
+  var i, m;
+  for (i = 0; i < limit; i++) {
+    m = null;
+    try { m = temp.move(moveHistory[i], {sloppy: true}); } catch (err) { m = null; }
+    if (!m) break;
+    if (!m.captured) continue;
+    if (m.color === 'w') blackCaptured.push(m.captured);
+    else whiteCaptured.push(m.captured);
+  }
   updateCapturedPieces();
-  if (showAnimazioni) boomOn(capturedSquare(move));
+}
+
+function noteCapture(move) {
+  syncCapturedFromHistory();
+  if (move && move.captured && showAnimazioni) boomOn(capturedSquare(move));
 }
 
 function scheduleComputerAfterHuman() {
@@ -5175,6 +5197,7 @@ function goToMove(idx) {
     try { game.load(fen); } catch (e) {}
   }
   removeAllHighlights();
+  syncCapturedFromHistory();
   updateMoveList();
 }
 
@@ -5344,9 +5367,7 @@ function resetGame() {
   lastMoveMark = null;
   inspectSquare = null;
   removeAllHighlights();
-  whiteCaptured = [];
-  blackCaptured = [];
-  updateCapturedPieces();
+  syncCapturedFromHistory();
   updateAdvantageBar(0);
   updateStatus('Nuova partita!', 'success');
   humanColor = computerPlaysWhite ? 'b' : 'w';
@@ -5448,16 +5469,10 @@ function loadGameById(id) {
       moveHistory = [];
       moveMarks = [];
       glyphMarks = [];
-      whiteCaptured = [];
-      blackCaptured = [];
       trial.history({verbose: true}).forEach(function(m) {
         var played = replay.move(m.san);
         moveHistory.push(m.san);
         fenHistory.push(played ? replay.fen() : trial.fen());
-        if (m.captured) {
-          if (m.color === 'w') blackCaptured.push(m.captured);
-          else whiteCaptured.push(m.captured);
-        }
       });
       viewIndex = moveHistory.length;
       isReplaying = false;
@@ -5468,7 +5483,7 @@ function loadGameById(id) {
       selectedSquare = null;
       lastMoveMark = null;
       applyActiveOverlays();
-      updateCapturedPieces();
+      syncCapturedFromHistory();
       updateAdvantageBar(0);
       updateMoveList();
       updateGameResult();
@@ -5624,9 +5639,7 @@ $('#asymmetricToggle').on('change', function() {
     board.orientation(boardOrientation);
     selectedSquare = null;
     lastMoveMark = null;
-    whiteCaptured = [];
-    blackCaptured = [];
-    updateCapturedPieces();
+    syncCapturedFromHistory();
     applyActiveOverlays();
     $('#setupContainer').addClass('d-none');
     $('#myBoard').removeClass('d-none');
