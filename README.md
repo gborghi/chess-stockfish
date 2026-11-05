@@ -1,32 +1,25 @@
-# Scacchi vs. Stockfysshe
+# Scacchi vs. Stockfish
 
-Web app di scacchi su Google Apps Script con Stockfish, navigazione mosse, salvataggio partite su Google Sheet, e un look medievale ispirato al Claude Design.
+Web app di scacchi con Stockfish (CDN `stockfish.js` 10.0.2), look medievale.
 
-## Struttura
+## Cartelle
 
-- `Codice.gs` — backend Apps Script (handler `doGet`, salvataggio partite su Sheet)
-- `index.html` — markup principale (incluso da `doGet` via template HTML service)
-- `Style.html` — CSS, stile medievale "Illuminated" (parchment + ink)
-- `JavaScript.html` — logica client (chessboard.js + chess.js + Stockfish + UI)
-- `pieces/` — asset PNG dei set di pezzi personalizzati (Fable / Sci-fi / Elven / Orcish)
-- `grok_prompts.txt` — 48 prompt pronti per generare i PNG dei pezzi con Grok / Aurora
-
-## Pezzi personalizzati (HD)
-
-Le sottocartelle `pieces/<tema>/` ospitano PNG 1024×1024 con alpha trasparente.
-Naming: `wK.png wQ.png wR.png wB.png wN.png wP.png` per i pezzi bianchi,
-`bK.png bQ.png bR.png bB.png bN.png bP.png` per i neri.
-
-Vengono serviti via **jsDelivr CDN** direttamente da questo repo, con il pattern:
+- `apps-script/` — progetto Google Apps Script (`Codice.gs`, `index.html`, `Style.html`, `JavaScript.html`). Copia questi file nell’editor GAS. Salvataggio partite su Sheet «Partite».
+- `cloudflare/` — sito statico per Cloudflare Pages (`index.html` già assemblato + `_headers` + `archivio.json`). Stesso UI; le partite vanno in `localStorage`.
+- `pieces/` — PNG dei set HD, serviti da jsDelivr:
 
 ```
 https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@main/pieces/<tema>/<file>.png
 ```
 
-Aggiungere/sostituire un pezzo = `git push` + attendere il refresh cache CDN
-(~10 min) o forzare con la [purge tool](https://www.jsdelivr.com/tools/purge).
+Live: https://scacchi-stockfish.pages.dev
 
-## Deploy Apps Script
+Stockfish: `https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js`
 
-I file `.gs` e `.html` vanno copiati nel project editor di Apps Script — il
-repo qui è solo per backup, versioning e hosting degli asset.
+Ricostruire `cloudflare/` (e `~/ICT/scacchi-stockfish/dist`) da `apps-script/`:
+
+```
+python3 /Users/g.borghi/ICT/scacchi-stockfish/build.py
+```
+
+Deploy: push su `main` → GitHub Actions (`.github/workflows/deploy.yml`) pubblica `cloudflare/` su Cloudflare Pages. Non usare wrangler in locale.

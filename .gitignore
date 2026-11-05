@@ -12,3 +12,7 @@ desktop.ini
 # Backup
 *.bak
 *.orig
+
+scacchi-tv.apk
+data/
+.claude/
