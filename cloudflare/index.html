@@ -5357,15 +5357,6 @@ function initBoard() {
   startPieceImgRetryWatch();
     updateCustomPieceShadowClass();
   // Optional deep-link: ?pezzi=dinosaurs_hd (or sci-fi etc.)
-  (function applyPezziQuery() {
-    try {
-      var q = new URLSearchParams(window.location.search || '');
-      var pezzi = q.get('pezzi');
-      if (pezzi && pieceThemes[pezzi]) {
-        $('#pieceThemeSelect').val(pezzi).trigger('change');
-      }
-    } catch (e) {}
-  })();
 }
 
 function handleModeChange(mode) {
@@ -5539,7 +5530,20 @@ $(document).ready(function() {
     if (asymmetricPieces) rebuildBoardWithCurrentTheme();
   });
 
-  $('#asymmetricToggle').on('change', function() {
+    (function applyPezziQuery() {
+    try {
+      var q = new URLSearchParams(window.location.search || '');
+      var pezzi = q.get('pezzi');
+      if (pezzi && pieceThemes[pezzi]) {
+        $('#pieceThemeSelect').val(pezzi);
+        currentPieceTheme = pieceThemes[pezzi];
+        updateCustomPieceShadowClass();
+        rebuildBoardWithCurrentTheme();
+      }
+    } catch (e) {}
+  })();
+
+$('#asymmetricToggle').on('change', function() {
     asymmetricPieces = $(this).is(':checked');
     if (asymmetricPieces) {
       $('#blackPiecesWrap').removeClass('d-none');
