@@ -126,6 +126,13 @@ var board = null;
 var game = new Chess();
 var stockfish = null;
 var stockfishReady = false;
+var hintStockfish = null;
+var hintStockfishReady = false;
+var hintSearchId = 0;
+var hintSearchInFlight = 0;
+var STOCKFISH_MAX_DEPTH = 30;
+var STOCKFISH_MAX_SKILL = 20;
+var HINT_ENGINE_BOOST = 2;
 var computerPlaysWhite = false;
 var computerPlaysBlack = true;
 var boardOrientation = 'white';
@@ -527,6 +534,7 @@ function finishHumanMove(move) {
 function clearHint(silent) {
   hintOn = false;
   hintSquares = null;
+  cancelHintSearch();
   var btn = document.getElementById('mossaMiglioreBtn');
   if (btn) {
     btn.setAttribute('aria-pressed', 'false');
@@ -547,24 +555,84 @@ function showHint(uci) {
   updateStatus('Suggerimento: ' + hintSquares.from + '–' + hintSquares.to + '. Un altro click lo toglie.', 'success');
 }
 
-function hintDepth() {
-  var turn = game.turn();
-  var depth = strengthLevel;
-  if (!((turn === 'w' && computerPlaysWhite) || (turn === 'b' && !computerPlaysWhite))) {
-    depth = strengthLevelBlack;
+function opponentEngineSettings() {
+  // Skill/depth del computer avversario (slider primario = unico PC; in "entrambi" il più alto).
+  if (computerPlaysWhite && computerPlaysBlack) {
+    return {
+      depth: Math.max(strengthLevel || 0, strengthLevelBlack || 0),
+      skill: Math.max(skillLevel || 0, skillLevelBlack || 0)
+    };
   }
-  if (!depth || depth < 8) depth = 10;
-  return depth;
+  return { depth: strengthLevel || 0, skill: skillLevel || 0 };
 }
 
+function hintEngineSettings() {
+  var opp = opponentEngineSettings();
+  var depth = Math.min(STOCKFISH_MAX_DEPTH, (opp.depth || 0) + HINT_ENGINE_BOOST);
+  var skill = Math.min(STOCKFISH_MAX_SKILL, (opp.skill || 0) + HINT_ENGINE_BOOST);
+  if (depth < 0) depth = 0;
+  if (skill < 0) skill = 0;
+  return { depth: depth, skill: skill };
+}
+
+function hintDepth() {
+  return hintEngineSettings().depth;
+}
+
+function cancelHintSearch() {
+  hintSearchId++;
+  hintSearchInFlight = 0;
+  if (hintStockfish) {
+    try { hintStockfish.postMessage('stop'); } catch (e) {}
+  }
+}
+
+function onHintStockfishLine(line) {
+  if (line.indexOf('uciok') !== -1 || line.indexOf('readyok') !== -1) {
+    hintStockfishReady = true;
+    return;
+  }
+  if (line.indexOf('bestmove') !== 0) return;
+  var id = hintSearchInFlight;
+  hintSearchInFlight = 0;
+  if (!id || id !== hintSearchId) return;
+  if (!hintOn) return;
+  var match = line.match(/bestmove\s+(\S+)/);
+  var uci = match ? match[1] : '';
+  showHint(uci);
+}
+
+function runHintSearch(fen) {
+  var opts = hintEngineSettings();
+  fen = fen || game.fen();
+  // Worker dedicato: non tocca skill/depth del motore di gioco.
+  if (hintStockfish && hintStockfishReady) {
+    hintSearchId++;
+    hintSearchInFlight = hintSearchId;
+    try {
+      hintStockfish.postMessage('position fen ' + fen);
+      hintStockfish.postMessage('setoption name Skill Level value ' + opts.skill);
+      hintStockfish.postMessage('go depth ' + opts.depth);
+    } catch (e) {
+      hintSearchInFlight = 0;
+    }
+    return opts;
+  }
+  // Fallback sull'istanza principale solo se il worker hint non è pronto.
+  if (stockfishReady) {
+    queueSearch({kind: 'hint', depth: opts.depth, skill: opts.skill, fen: fen});
+  }
+  return opts;
+}
 
 function maybeAutoHint() {
   if (!showAutoHint) return;
   if (!humanCanMove()) return;
-  if (!stockfishReady || isReplaying || isSetupMode || matchOver() || isPaused) return;
+  if ((!stockfishReady && !hintStockfishReady) || isReplaying || isSetupMode || matchOver() || isPaused) return;
   if (glyphHold || coachHoldsComputer) return;
   if (analysis) return;
   if (computerToMove()) return;
+  if (hintSearchInFlight) return;
   if (searchInFlight && searchKind === 'hint') return;
   hintOn = true;
   var btn = document.getElementById('mossaMiglioreBtn');
@@ -572,17 +640,18 @@ function maybeAutoHint() {
     btn.setAttribute('aria-pressed', 'true');
     btn.textContent = 'Nascondi suggerimento';
   }
-  queueSearch({kind: 'hint', depth: hintDepth(), skill: 20, fen: game.fen()});
+  runHintSearch(game.fen());
 }
 
 function toggleHint() {
   if (hintOn) {
     clearHint(false);
-    cancelSearch();
+    cancelHintSearch();
+    if (searchKind === 'hint' || (searchInFlight && searchKind === 'hint')) cancelSearch();
     if (!isPaused && !isReplaying && !isSetupMode) scheduleComputerAfterHuman();
     return;
   }
-  if (!stockfishReady || isReplaying || isSetupMode || matchOver()) {
+  if ((!stockfishReady && !hintStockfishReady) || isReplaying || isSetupMode || matchOver()) {
     updateStatus('Suggerimento non disponibile.', 'warning');
     return;
   }
@@ -593,8 +662,9 @@ function toggleHint() {
     btn.setAttribute('aria-pressed', 'true');
     btn.textContent = 'Nascondi suggerimento';
   }
-  updateStatus('Cerco la mossa migliore...', 'info');
-  queueSearch({kind: 'hint', depth: hintDepth(), skill: 20, fen: game.fen()});
+  var opts = hintEngineSettings();
+  updateStatus('Cerco la mossa migliore (skill ' + opts.skill + ', depth ' + opts.depth + ')...', 'info');
+  runHintSearch(game.fen());
 }
 
 function coachPanelOpen() {
@@ -3204,6 +3274,19 @@ function initStockfish() {
       stockfish.onerror = function(err) { console.error('Worker error:', err); };
       stockfish.postMessage('uci');
       stockfish.postMessage('isready');
+      try {
+        hintStockfish = new Worker(url);
+        hintStockfish.onmessage = function(e) {
+          onHintStockfishLine(String(e.data || '').trim());
+        };
+        hintStockfish.onerror = function(err) { console.error('Hint worker error:', err); };
+        hintStockfish.postMessage('uci');
+        hintStockfish.postMessage('isready');
+      } catch (hintErr) {
+        hintStockfish = null;
+        hintStockfishReady = false;
+        console.error('Hint Stockfish non avviato:', hintErr);
+      }
     })
     .catch(function(err) { updateStatus('Errore caricamento Stockfish', 'danger'); });
 }
