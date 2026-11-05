@@ -4001,7 +4001,11 @@ $('#asymmetricToggle').on('change', function() {
   function stamp() {
     window.__scacchiTvNav = MARK;
     window.__scacchiTvMode = mode;
-    if (document.documentElement) document.documentElement.setAttribute('data-tv-nav', MARK);
+    if (document.documentElement) {
+      document.documentElement.setAttribute('data-tv-nav', MARK);
+      if (window.__scacchiTv) document.documentElement.setAttribute('data-tv-app', '1');
+      else document.documentElement.removeAttribute('data-tv-app');
+    }
   }
   stamp();
 
@@ -4090,10 +4094,17 @@ $('#asymmetricToggle').on('change', function() {
     return o === 'black' ? 'black' : 'white';
   }
 
+  function isTvApp() {
+    return !!window.__scacchiTv;
+  }
+
   function paintSquare() {
     var old = document.querySelectorAll('#myBoard .tv-sq');
     var sq, el, i;
     for (i = 0; i < old.length; i++) old[i].classList.remove('tv-sq');
+    // Solo nell'app TV (tv.js imposta __scacchiTv). Su telefono/browser
+    // non deve restare la casa e2 bordata di giallo.
+    if (!isTvApp()) return;
     if (mode !== 'board') return;
     sq = window.__scacchiTvSquare || 'e2';
     if (!/^[a-h][1-8]$/.test(sq)) sq = 'e2';
@@ -4359,6 +4370,7 @@ $('#asymmetricToggle').on('change', function() {
     var dir;
     if (seenDown === e) return;
     seenDown = e;
+    if (!isTvApp()) return;
     if (isVolumeUp(e) || isVolumeDown(e)) {
       eat(e);
       return;
@@ -4406,6 +4418,7 @@ $('#asymmetricToggle').on('change', function() {
   function onKeyUp(e) {
     if (seenUp === e) return;
     seenUp = e;
+    if (!isTvApp()) return;
     if (isChannelUp(e) || isChannelDown(e)) {
       eat(e);
       chHeld = false;
@@ -4469,7 +4482,14 @@ $('#asymmetricToggle').on('change', function() {
 
   function boot() {
     watchBoard();
-    enterBoard();
+    if (isTvApp()) enterBoard();
+    else {
+      mode = 'board';
+      window.__scacchiTvMode = 'board';
+      clearSquare();
+      clearFocusMark();
+      stamp();
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

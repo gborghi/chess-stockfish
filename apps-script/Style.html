@@ -1265,9 +1265,13 @@ html, body {
   .sidebar::before, .sidebar::after, .board-area::after { display: none; }
 }
 
-/* Telecomando TV: outline giallo, casa del cursore. Nessun titolo del modo. */
+/* Telecomando TV: outline giallo, casa del cursore. Solo con __scacchiTv (app TV). */
 #myBoard .tv-sq {
   box-shadow: inset 0 0 0 8px #f5c518 !important;
+}
+/* Cintura di sicurezza: senza flag TV il bordo giallo non deve comparire. */
+html:not([data-tv-app]) #myBoard .tv-sq {
+  box-shadow: none !important;
 }
 .tv-remote-focus {
   outline: 6px solid #f5c518 !important;
