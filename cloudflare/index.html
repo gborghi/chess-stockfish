@@ -1282,6 +1282,89 @@ html, body {
   outline-offset: 4px;
   box-shadow: 0 0 0 4px #f5c518 !important;
 }
+
+/* Custom HD pieces: subtle outline for contrast on light/dark squares */
+/* White → dark fringe; black → light fringe (chessboard.js uses <img src>) */
+body.hd-pieces-on #myBoard img.piece-417db[src*="/wK.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/wQ.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/wR.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/wB.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/wN.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/wP.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/wK.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/wQ.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/wR.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/wB.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/wN.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/wP.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/wK.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/wQ.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/wR.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/wB.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/wN.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/wP.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/wK.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/wQ.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/wR.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/wB.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/wN.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/wP.png"],
+body.hd-pieces-on #blackCaptured img[src*="/wK.png"],
+body.hd-pieces-on #blackCaptured img[src*="/wQ.png"],
+body.hd-pieces-on #blackCaptured img[src*="/wR.png"],
+body.hd-pieces-on #blackCaptured img[src*="/wB.png"],
+body.hd-pieces-on #blackCaptured img[src*="/wN.png"],
+body.hd-pieces-on #blackCaptured img[src*="/wP.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/wK.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/wQ.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/wR.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/wB.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/wN.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/wP.png"] {
+  filter: drop-shadow(0 0 0.7px rgba(20,14,8,0.98))
+          drop-shadow(0 0 1.4px rgba(20,14,8,0.7))
+          drop-shadow(0 1px 1.5px rgba(0,0,0,0.35));
+}
+body.hd-pieces-on #myBoard img.piece-417db[src*="/bK.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/bQ.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/bR.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/bB.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/bN.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/bP.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/bK.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/bQ.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/bR.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/bB.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/bN.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/bP.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/bK.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/bQ.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/bR.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/bB.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/bN.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/bP.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/bK.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/bQ.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/bR.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/bB.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/bN.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/bP.png"],
+body.hd-pieces-on #blackCaptured img[src*="/bK.png"],
+body.hd-pieces-on #blackCaptured img[src*="/bQ.png"],
+body.hd-pieces-on #blackCaptured img[src*="/bR.png"],
+body.hd-pieces-on #blackCaptured img[src*="/bB.png"],
+body.hd-pieces-on #blackCaptured img[src*="/bN.png"],
+body.hd-pieces-on #blackCaptured img[src*="/bP.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/bK.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/bQ.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/bR.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/bB.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/bN.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/bP.png"] {
+  filter: drop-shadow(0 0 0.7px rgba(255,248,230,0.95))
+          drop-shadow(0 0 1.5px rgba(255,240,210,0.55))
+          drop-shadow(0 1px 1.5px rgba(255,255,255,0.25));
+}
 </style>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css">
@@ -1819,7 +1902,7 @@ function pieceFallbackUrl(pieceCode) {
 }
 
 function isCustomHdUrl(url) {
-  return typeof url === 'string' && url.indexOf('/pieces/') !== -1 && /\.png(\?|$)/.test(url);
+  return typeof url === 'string' && /(?:^|\/)pieces\//.test(url) && /\.png(\?|$)/.test(url);
 }
 
 function cacheBustUrl(url, attempt) {
@@ -4093,13 +4176,13 @@ var pieceThemes = {
   'elven':       function(piece) { return buildSvgPiece('elven',  piece); },
   'orcish':      function(piece) { return buildSvgPiece('orcish', piece); },
   // ── HD PNG sets (Grok/Aurora generated) served via jsDelivr CDN ─────────
-  'fable_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/fable_obsidian/{piece}.png',
-  'fable2_hd':    'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/fable2_obsidian/{piece}.png',
-  'scifi_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/scifi_obsidian/{piece}.png',
-  'elven_hd':     'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/elven_obsidian/{piece}.png',
-  'orcish_hd':    'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/orcish_obsidian/{piece}.png',
-  'fairytale_hd': 'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/fairytale_obsidian/{piece}.png',
-  'dinosaurs_hd': 'https://cdn.jsdelivr.net/gh/gborghi/chess-stockfish@2f33051/pieces/dinosaurs_obsidian/{piece}.png'
+  'fable_hd':     'pieces/fable_obsidian/{piece}.png',
+  'fable2_hd':    'pieces/fable2_obsidian/{piece}.png',
+  'scifi_hd':     'pieces/scifi_obsidian/{piece}.png',
+  'elven_hd':     'pieces/elven_obsidian/{piece}.png',
+  'orcish_hd':    'pieces/orcish_obsidian/{piece}.png',
+  'fairytale_hd': 'pieces/fairytale_obsidian/{piece}.png',
+  'dinosaurs_hd': 'pieces/dinosaurs_obsidian/{piece}.png'
 };
 var currentPieceTheme = pieceThemes['cburnett'];
 var currentPieceThemeBlack = pieceThemes['cburnett'];
@@ -4113,6 +4196,16 @@ function buildPieceThemeFn() {
     var theme = (asymmetricPieces && !isWhite) ? currentPieceThemeBlack : currentPieceTheme;
     return resolvePieceUrl(theme, piece);
   };
+}
+
+function isHdThemeValue(val) {
+  return typeof val === 'string' && /_hd$/.test(val);
+}
+function updateCustomPieceShadowClass() {
+  var w = ($('#pieceThemeSelect').val() || '');
+  var b = ($('#pieceThemeSelectBlack').val() || w);
+  var on = isHdThemeValue(w) || (asymmetricPieces && isHdThemeValue(b));
+  document.body.classList.toggle('hd-pieces-on', !!on);
 }
 
 var boardThemes = {
@@ -5262,6 +5355,7 @@ function resetGame() {
 function initBoard() {
   board = Chessboard('myBoard', boardOptions('start'));
   startPieceImgRetryWatch();
+  updateCustomPieceShadowClass();
 }
 
 function handleModeChange(mode) {
@@ -5419,15 +5513,19 @@ $(document).ready(function() {
     board = Chessboard('myBoard', boardOptions(game.fen()));
     applyActiveOverlays();
     updateCapturedPieces();
+    bindPieceImgRetry(document.getElementById('myBoard'));
+    updateCustomPieceShadowClass();
   }
 
     $('#pieceThemeSelect').on('change', function() {
     currentPieceTheme = pieceThemes[$(this).val()] || pieceThemes['cburnett'];
+    updateCustomPieceShadowClass();
     rebuildBoardWithCurrentTheme();
   });
 
   $('#pieceThemeSelectBlack').on('change', function() {
     currentPieceThemeBlack = pieceThemes[$(this).val()] || pieceThemes['cburnett'];
+    updateCustomPieceShadowClass();
     if (asymmetricPieces) rebuildBoardWithCurrentTheme();
   });
 

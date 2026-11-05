@@ -1274,4 +1274,87 @@ html, body {
   outline-offset: 4px;
   box-shadow: 0 0 0 4px #f5c518 !important;
 }
+
+/* Custom HD pieces: subtle outline for contrast on light/dark squares */
+/* White → dark fringe; black → light fringe (chessboard.js uses <img src>) */
+body.hd-pieces-on #myBoard img.piece-417db[src*="/wK.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/wQ.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/wR.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/wB.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/wN.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/wP.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/wK.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/wQ.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/wR.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/wB.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/wN.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/wP.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/wK.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/wQ.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/wR.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/wB.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/wN.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/wP.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/wK.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/wQ.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/wR.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/wB.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/wN.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/wP.png"],
+body.hd-pieces-on #blackCaptured img[src*="/wK.png"],
+body.hd-pieces-on #blackCaptured img[src*="/wQ.png"],
+body.hd-pieces-on #blackCaptured img[src*="/wR.png"],
+body.hd-pieces-on #blackCaptured img[src*="/wB.png"],
+body.hd-pieces-on #blackCaptured img[src*="/wN.png"],
+body.hd-pieces-on #blackCaptured img[src*="/wP.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/wK.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/wQ.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/wR.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/wB.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/wN.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/wP.png"] {
+  filter: drop-shadow(0 0 0.7px rgba(20,14,8,0.98))
+          drop-shadow(0 0 1.4px rgba(20,14,8,0.7))
+          drop-shadow(0 1px 1.5px rgba(0,0,0,0.35));
+}
+body.hd-pieces-on #myBoard img.piece-417db[src*="/bK.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/bQ.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/bR.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/bB.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/bN.png"],
+body.hd-pieces-on #myBoard img.piece-417db[src*="/bP.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/bK.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/bQ.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/bR.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/bB.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/bN.png"],
+body.hd-pieces-on #setupBoard img.piece-417db[src*="/bP.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/bK.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/bQ.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/bR.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/bB.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/bN.png"],
+body.hd-pieces-on #whiteCaptured img[src*="/bP.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/bK.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/bQ.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/bR.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/bB.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/bN.png"],
+body.hd-pieces-on #whiteCapturedRight img[src*="/bP.png"],
+body.hd-pieces-on #blackCaptured img[src*="/bK.png"],
+body.hd-pieces-on #blackCaptured img[src*="/bQ.png"],
+body.hd-pieces-on #blackCaptured img[src*="/bR.png"],
+body.hd-pieces-on #blackCaptured img[src*="/bB.png"],
+body.hd-pieces-on #blackCaptured img[src*="/bN.png"],
+body.hd-pieces-on #blackCaptured img[src*="/bP.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/bK.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/bQ.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/bR.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/bB.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/bN.png"],
+body.hd-pieces-on #blackCapturedRight img[src*="/bP.png"] {
+  filter: drop-shadow(0 0 0.7px rgba(255,248,230,0.95))
+          drop-shadow(0 0 1.5px rgba(255,240,210,0.55))
+          drop-shadow(0 1px 1.5px rgba(255,255,255,0.25));
+}
 </style>
