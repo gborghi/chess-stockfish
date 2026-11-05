@@ -3565,7 +3565,17 @@ function resetGame() {
 function initBoard() {
   board = Chessboard('myBoard', boardOptions('start'));
   startPieceImgRetryWatch();
-  updateCustomPieceShadowClass();
+    updateCustomPieceShadowClass();
+  // Optional deep-link: ?pezzi=dinosaurs_hd (or sci-fi etc.)
+  (function applyPezziQuery() {
+    try {
+      var q = new URLSearchParams(window.location.search || '');
+      var pezzi = q.get('pezzi');
+      if (pezzi && pieceThemes[pezzi]) {
+        $('#pieceThemeSelect').val(pezzi).trigger('change');
+      }
+    } catch (e) {}
+  })();
 }
 
 function handleModeChange(mode) {
