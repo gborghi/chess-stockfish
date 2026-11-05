@@ -117,6 +117,8 @@ var showAnimazioni = false;
 var showClassifica = false;
 var showArchivio = false;
 var showChiVince = false;
+var showAutoHint = false;
+var lastAperturaText = '';
 var glyphHold = false;
 var animAudioCtx = null;
 var animWeatherKey = '';
@@ -433,7 +435,9 @@ function finishComputerMove(move, statusText, statusType, delay) {
   if (holdForGlyph(move)) return;
   if (computerPlaysWhite && computerPlaysBlack && !abandonedBy && !isPaused && !isReplaying && !isSetupMode) {
     timeoutId = setTimeout(makeComputerMove, delay);
+    return;
   }
+  maybeAutoHint();
 }
 
 function applyEngineMove(uci) {
@@ -551,6 +555,24 @@ function hintDepth() {
   }
   if (!depth || depth < 8) depth = 10;
   return depth;
+}
+
+
+function maybeAutoHint() {
+  if (!showAutoHint) return;
+  if (!humanCanMove()) return;
+  if (!stockfishReady || isReplaying || isSetupMode || matchOver() || isPaused) return;
+  if (glyphHold || coachHoldsComputer) return;
+  if (analysis) return;
+  if (computerToMove()) return;
+  if (searchInFlight && searchKind === 'hint') return;
+  hintOn = true;
+  var btn = document.getElementById('mossaMiglioreBtn');
+  if (btn) {
+    btn.setAttribute('aria-pressed', 'true');
+    btn.textContent = 'Nascondi suggerimento';
+  }
+  queueSearch({kind: 'hint', depth: hintDepth(), skill: 20, fen: game.fen()});
 }
 
 function toggleHint() {
@@ -707,8 +729,8 @@ function glyphNode(kind) {
 function paintGlyphs() {
   var ids = ['momentumGlyphs', 'momentumGlyphsRight'];
   var idx = -1;
-  if (showClassifica && viewIndex > 0 && glyphMarks[viewIndex - 1]) idx = viewIndex - 1;
-  else if (showClassifica) {
+  if (viewIndex > 0 && glyphMarks[viewIndex - 1]) idx = viewIndex - 1;
+  else {
     for (var i = glyphMarks.length - 1; i >= 0; i--) {
       if (glyphMarks[i]) { idx = i; break; }
     }
@@ -732,7 +754,7 @@ function paintGlyphs() {
 }
 
 function startGlyph(move) {
-  if (!showClassifica || !stockfishReady || !move || isReplaying || isSetupMode) return false;
+  if (!stockfishReady || !move || isReplaying || isSetupMode) return false;
   if (analysis && analysis.mode !== 'glyph') return false;
   var index = viewIndex - 1;
   if (index < 0 || !fenHistory[index]) return false;
@@ -754,7 +776,7 @@ function startGlyph(move) {
 }
 
 function holdForGlyph(move) {
-  if (!showClassifica || !stockfishReady || isReplaying || isSetupMode) return false;
+  if (!stockfishReady || isReplaying || isSetupMode) return false;
   glyphHold = true;
   if (startGlyph(move)) return true;
   glyphHold = false;
@@ -893,7 +915,13 @@ function archivioShow(text) {
 function paintApertura() {
   var moves = (moveHistory || []).slice(0, viewIndex);
   var text = '';
-  try { text = openingFacts(moves) || ''; } catch (e) { text = ''; }
+  if (!moves.length) {
+    lastAperturaText = '';
+  } else {
+    try { text = openingFacts(moves) || ''; } catch (e) { text = ''; }
+    if (text) lastAperturaText = text;
+    else text = lastAperturaText;
+  }
   ['aperturaNota', 'aperturaNotaRight'].forEach(function(id) {
     var el = document.getElementById(id);
     if (!el) return;
@@ -1116,6 +1144,7 @@ function releaseGlyphHold() {
   if (!glyphHold) return;
   glyphHold = false;
   scheduleComputerAfterHuman();
+  maybeAutoHint();
 }
 
 function isLightSquare(square) {
@@ -1448,6 +1477,12 @@ var OPENINGS = [
   { id: 'indiana-donna', name: 'indiana di donna', phrase: "l'indiana di donna", side: 'b', san: ['d4', 'Nf6', 'c4', 'e6', 'Nf3', 'b6'], uci: ['d2d4', 'g8f6', 'c2c4', 'e7e6', 'g1f3', 'b7b6'] },
   { id: 'italiana', name: 'italiana', phrase: "l'italiana", side: 'w', san: ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4'], uci: ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4'] },
   { id: 'spagnola', name: 'spagnola', phrase: 'la spagnola', side: 'w', san: ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5'], uci: ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1b5'] },
+  { id: 'siciliana-najdorf', name: 'siciliana Najdorf', phrase: 'la siciliana Najdorf', side: 'b', san: ['e4', 'c5', 'Nf3', 'd6', 'd4', 'cxd4', 'Nxd4', 'Nf6', 'Nc3', 'a6'], uci: ['e2e4', 'c7c5', 'g1f3', 'd7d6', 'd2d4', 'c5d4', 'f3d4', 'g8f6', 'b1c3', 'a7a6'] },
+  { id: 'siciliana-dragone', name: 'siciliana Dragone', phrase: 'la siciliana Dragone', side: 'b', san: ['e4', 'c5', 'Nf3', 'd6', 'd4', 'cxd4', 'Nxd4', 'Nf6', 'Nc3', 'g6'], uci: ['e2e4', 'c7c5', 'g1f3', 'd7d6', 'd2d4', 'c5d4', 'f3d4', 'g8f6', 'b1c3', 'g7g6'] },
+  { id: 'siciliana-classica', name: 'siciliana classica', phrase: 'la siciliana classica', side: 'b', san: ['e4', 'c5', 'Nf3', 'd6', 'd4', 'cxd4', 'Nxd4', 'Nf6', 'Nc3', 'Nc6'], uci: ['e2e4', 'c7c5', 'g1f3', 'd7d6', 'd2d4', 'c5d4', 'f3d4', 'g8f6', 'b1c3', 'b8c6'] },
+  { id: 'siciliana-scheveningen', name: 'siciliana Scheveningen', phrase: 'la siciliana Scheveningen', side: 'b', san: ['e4', 'c5', 'Nf3', 'd6', 'd4', 'cxd4', 'Nxd4', 'Nf6', 'Nc3', 'e6'], uci: ['e2e4', 'c7c5', 'g1f3', 'd7d6', 'd2d4', 'c5d4', 'f3d4', 'g8f6', 'b1c3', 'e7e6'] },
+  { id: 'siciliana-aperta', name: 'siciliana aperta', phrase: 'la siciliana aperta', side: 'b', san: ['e4', 'c5', 'Nf3', 'd6', 'd4'], uci: ['e2e4', 'c7c5', 'g1f3', 'd7d6', 'd2d4'] },
+  { id: 'siciliana-kan', name: 'siciliana Kan', phrase: 'la siciliana Kan', side: 'b', san: ['e4', 'c5', 'Nf3', 'e6', 'd4', 'cxd4', 'Nxd4', 'a6'], uci: ['e2e4', 'c7c5', 'g1f3', 'e7e6', 'd2d4', 'c5d4', 'f3d4', 'a7a6'] },
   { id: 'siciliana', name: 'siciliana', phrase: 'la siciliana', side: 'b', san: ['e4', 'c5'], uci: ['e2e4', 'c7c5'] },
   { id: 'francese', name: 'francese', phrase: 'la francese', side: 'b', san: ['e4', 'e6'], uci: ['e2e4', 'e7e6'] },
   { id: 'caro-kann', name: 'Caro-Kann', phrase: 'la Caro-Kann', side: 'b', san: ['e4', 'c6'], uci: ['e2e4', 'c7c6'] },
@@ -2225,7 +2260,7 @@ function updateStatus(text, alertType) {
     .text(text);
 }
 
-var OVERLAY_CLASSES = 'hl-under-attack hl-en-prise highlight-legal hl-legal-capture hl-controlled hl-inspect-target hl-inspect-attacker hl-safe-empty hl-hint threatened-piece unprotected-piece';
+var OVERLAY_CLASSES = 'hl-under-attack hl-en-prise highlight-legal hl-legal-capture hl-controlled hl-inspect-target hl-inspect-attacker hl-safe-empty hl-hint hl-check threatened-piece unprotected-piece';
 
 function removeAllHighlights() {
   $('#myBoard .square-55d63').removeClass('highlight-white highlight-black highlight-selected ' + OVERLAY_CLASSES);
@@ -2251,7 +2286,30 @@ function applyActiveOverlays() {
     $('#myBoard .square-' + hintSquares.from).addClass('hl-hint');
     $('#myBoard .square-' + hintSquares.to).addClass('hl-hint');
   }
+  paintCheck();
   syncAnimWeather();
+}
+
+function paintCheck() {
+  var ch;
+  try { ch = viewChess(); } catch (e) { return; }
+  if (!ch) return;
+  var inCheck = false;
+  try { inCheck = ch.in_check(); } catch (e2) { return; }
+  if (!inCheck) return;
+  var turn = ch.turn();
+  var files = 'abcdefgh';
+  var f, r, sq, piece;
+  for (f = 0; f < 8; f++) {
+    for (r = 1; r <= 8; r++) {
+      sq = files.charAt(f) + r;
+      piece = ch.get(sq);
+      if (piece && piece.type === 'k' && piece.color === turn) {
+        $('#myBoard .square-' + sq).addClass('hl-check');
+        return;
+      }
+    }
+  }
 }
 
 function paintUnderAttack() {
@@ -2605,6 +2663,7 @@ function loadOverlaySwitches() {
   showClassifica = read('scacchi-switch-classifica');
   showArchivio = read('scacchi-switch-archivio');
   showChiVince = read('scacchi-switch-chi-vince');
+  showAutoHint = read('scacchi-switch-mossa-migliore');
   $('#switchSottoAttacco').prop('checked', showUnderAttack);
   $('#switchInPresa').prop('checked', showEnPrise);
   $('#switchDovePuoAndare').prop('checked', showLegal);
@@ -2615,6 +2674,7 @@ function loadOverlaySwitches() {
   $('#switchClassifica').prop('checked', showClassifica);
   $('#switchArchivio').prop('checked', showArchivio);
   $('#switchChiVince').prop('checked', showChiVince);
+  $('#switchMossaMigliore').prop('checked', showAutoHint);
   paintArchivio();
   paintApertura();
   paintChiVince();
@@ -2649,6 +2709,11 @@ function bindOverlaySwitches() {
   wire('switchChiVince', 'scacchi-switch-chi-vince', function(on) {
     showChiVince = on;
     paintChiVince();
+  });
+  wire('switchMossaMigliore', 'scacchi-switch-mossa-migliore', function(on) {
+    showAutoHint = on;
+    if (!on) clearHint(true);
+    else maybeAutoHint();
   });
   $('#switchAnimazioni').on('click', function() { resumeAnimAudio(); });
   document.addEventListener('pointerdown', function() {
@@ -3219,6 +3284,7 @@ function resetGame() {
   moveHistory = [];
   moveMarks = [];
   glyphMarks = [];
+  lastAperturaText = '';
   fenHistory = [game.fen()];
   viewIndex = 0;
   startFen = 'startpos';
@@ -3544,7 +3610,8 @@ $(document).ready(function() {
       isPaused = false;
       $('#pauseRestartButton').text('Pause');
       updateStatus('Partita ripresa!', 'success');
-      timeoutId = setTimeout(makeComputerMove, 400);
+      if (computerToMove()) timeoutId = setTimeout(makeComputerMove, 400);
+      else maybeAutoHint();
     } else {
       isPaused = true;
       cancelSearch();
