@@ -707,6 +707,8 @@ function opponentEngineSettings() {
 function hintEngineSettings() {
   var opp = opponentEngineSettings();
   var depth = Math.min(STOCKFISH_MAX_DEPTH, (opp.depth || 0) + HINT_ENGINE_BOOST);
+  // slider «Profondità» (Segnalazioni): mai sotto computer + 2
+  if (typeof apDepth === 'function') depth = Math.max(depth, Math.min(STOCKFISH_MAX_DEPTH, apDepth()));
   var skill = Math.min(STOCKFISH_MAX_SKILL, (opp.skill || 0) + HINT_ENGINE_BOOST);
   if (depth < 0) depth = 0;
   if (skill < 0) skill = 0;
@@ -2802,6 +2804,52 @@ var AP_SIGLA = { p: '', n: 'C', b: 'A', r: 'T', q: 'D', k: 'R' };
 var AP_PRESS_VAL = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 4 };
 var AP_MULTIPV = 3;
 var AP_MAX_PLIES = 12;
+var AP_DEPTH_MIN = 6;
+var AP_DEPTH_MAX = 20;
+var AP_SAFETY_MS = 30000;   // tetto di sicurezza per ciascuna delle due ricerche
+var apDepthUser = null;     // profondità scelta con lo slider (localStorage)
+var apTimes = {};           // profondità -> ms dell'ultima analisi completa (A+B), per la stima
+try {
+  var _apd = parseInt(localStorage.getItem('scacchi-ap-depth'), 10);
+  if (!isNaN(_apd)) apDepthUser = Math.max(AP_DEPTH_MIN, Math.min(AP_DEPTH_MAX, _apd));
+  apTimes = JSON.parse(localStorage.getItem('scacchi-ap-tempi') || '{}') || {};
+} catch (e) { apTimes = {}; }
+
+function apDepthDefault() {
+  var opp = opponentEngineSettings();
+  return Math.max(AP_DEPTH_MIN, Math.min(AP_DEPTH_MAX, Math.max(12, (opp.depth || 0) + HINT_ENGINE_BOOST)));
+}
+
+/* Profondità dello slider (default: max(12, computer + 2)). */
+function apDepth() { return apDepthUser != null ? apDepthUser : apDepthDefault(); }
+
+function apTimeHint(depth) {
+  if (apTimes[depth]) return '≈ ' + apFmt(apTimes[depth] / 1000) + ' s a posizione (ultima misura)';
+  var best = null;
+  Object.keys(apTimes).forEach(function(k) {
+    var dk = parseInt(k, 10);
+    if (!isNaN(dk) && (best === null || Math.abs(dk - depth) < Math.abs(best - depth))) best = dk;
+  });
+  if (best === null) return 'tempo misurato dopo la prima analisi';
+  var est = apTimes[best] * Math.pow(1.6, depth - best);
+  return '≈ ' + apFmt(est / 1000) + ' s a posizione (stima)';
+}
+
+function syncApDepthUi() {
+  var box = document.getElementById('apDepthBox');
+  if (!box) return;
+  var on = !!(showAutoHint || showAnalisiPotenziata);
+  box.classList.toggle('d-none', !on);
+  var d = apDepth();
+  var sl = document.getElementById('apDepthSlider');
+  if (sl && String(sl.value) !== String(d)) sl.value = String(d);
+  $('#apDepthValue').text(d);
+  var hd = hintEngineSettings().depth;
+  var parts = [];
+  if (showAnalisiPotenziata) parts.push('Analisi ' + apTimeHint(d));
+  if (showAutoHint) parts.push('Mossa migliore: depth ' + hd + (hd > d ? ' (computer + 2)' : ''));
+  $('#apDepthTime').text(parts.join(' · '));
+}
 var stockfishWorkerUrl = '';
 var apStockfish = null;
 var apReady = false;
@@ -2809,7 +2857,7 @@ var apCache = {};
 var apCacheKeys = [];
 var apJob = null;       // {fen, phase:'A'|'B', id, lines:{}, t0, depth}
 var apJobId = 0;
-var apWanted = '';      // FEN che vogliamo analizzare
+var apWanted = null;    // {key, fen, depth} che vogliamo analizzare
 var apPartial = {};     // fen -> {A:..., B:...}
 var apStopping = false;
 
@@ -2991,7 +3039,7 @@ function apAnalyzeLine(rootFen, pv, attacker, scoreCp, mate) {
     var recap = seeExchange(lastOcc, lastMove.to, apOther(lastMove.color), apVal(lastOcc[lastMove.to].type) > 50 ? 0 : apVal(lastOcc[lastMove.to].type), 0);
     net += lastMove.color === attacker ? -recap : recap;
   }
-  var res = { line: sans.slice(0, 7).join(' ') + (sans.length > 7 ? ' …' : ''), cp: scoreCp, mate: mate,
+  var res = { line: sans.slice(0, 6).join(' ') + (sans.length > 6 ? ' …' : ''), cp: scoreCp, mate: mate,
     net: net, losses: losses, motif: motif, pins: [], tags: [], key: null };
   if (mate && mate > 0) res.mateIn = mate;
   if (net < 1 || !losses.length) return res.mateIn ? res : null;
@@ -3091,10 +3139,11 @@ function apFmt(x) { return (Math.round(x * 10) / 10).toFixed(1).replace('.', ','
 
 /* ---- motore dedicato ---- */
 function apEngineSettings() {
-  var depth = Math.max(12, hintEngineSettings().depth);
-  var tv = !!window.__scacchiTv;
-  return { depth: depth, movetime: tv ? 2500 : 4000 };
+  // Esattamente la profondità dello slider; solo un tetto di sicurezza alto.
+  return { depth: apDepth(), movetime: AP_SAFETY_MS };
 }
+
+function apKey(fen) { return fen + '|' + apDepth(); }
 
 function apEnsureEngine() {
   if (apStockfish || !stockfishWorkerUrl) return !!apStockfish;
@@ -3113,32 +3162,33 @@ function apEnsureEngine() {
   return !!apStockfish;
 }
 
-function apStartPhase(fen, phase) {
-  var s = apEngineSettings();
-  var posFen = phase === 'A' ? fen : apNullFen(fen);
-  apJob = { fen: fen, phase: phase, id: ++apJobId, lines: {}, t0: Date.now(), depth: 0, posFen: posFen };
+function apStartPhase(want, phase) {
+  var posFen = phase === 'A' ? want.fen : apNullFen(want.fen);
+  apJob = { key: want.key, fen: want.fen, target: want.depth, phase: phase, id: ++apJobId, lines: {}, t0: Date.now(), depth: 0, posFen: posFen };
   apStockfish.postMessage('position fen ' + posFen);
-  apStockfish.postMessage('go depth ' + s.depth + ' movetime ' + s.movetime);
+  apStockfish.postMessage('go depth ' + want.depth + ' movetime ' + AP_SAFETY_MS);
+  apPaintProgress();
 }
 
 function apKick() {
   if (!showAnalisiPotenziata || !apWanted) return;
   if (!apEnsureEngine() || !apReady) return;
   if (apJob) {
-    if (apJob.fen !== apWanted && !apStopping) {
+    if (apJob.key !== apWanted.key && !apStopping) {
       apStopping = true;
       try { apStockfish.postMessage('stop'); } catch (e) {}
     }
     return;
   }
-  if (apCache[apWanted]) return;
-  var part = apPartial[apWanted] || {};
-  if (!part.A) { apStartPhase(apWanted, 'A'); return; }
+  var w = apWanted;
+  if (apCache[w.key]) return;
+  var part = apPartial[w.key] || {};
+  if (!part.A) { apStartPhase(w, 'A'); return; }
   if (!part.B) {
     var inCheck = false;
-    try { inCheck = new Chess(apWanted).in_check(); } catch (e2) { inCheck = true; }
-    if (inCheck) { part.B = { skipped: true }; apPartial[apWanted] = part; apFinish(apWanted); return; }
-    apStartPhase(apWanted, 'B');
+    try { inCheck = new Chess(w.fen).in_check(); } catch (e2) { inCheck = true; }
+    if (inCheck) { part.B = { skipped: true }; apPartial[w.key] = part; apFinish(w); return; }
+    apStartPhase(w, 'B');
   }
 }
 
@@ -3152,7 +3202,19 @@ function apParseInfo(line) {
   var pv = line.split(' pv ')[1].trim().split(/\s+/);
   var score = mt ? (parseInt(mt[1], 10) > 0 ? 100000 : -100000) : (cp ? parseInt(cp[1], 10) : 0);
   apJob.lines[k] = { depth: d ? parseInt(d[1], 10) : 0, cp: score, mate: mt ? parseInt(mt[1], 10) : 0, pv: pv };
-  if (k === 1 && d) apJob.depth = parseInt(d[1], 10);
+  if (k === 1 && d) {
+    var nd = parseInt(d[1], 10);
+    if (nd !== apJob.depth) { apJob.depth = nd; apPaintProgress(); }
+  }
+}
+
+/* Aggiorna solo la riga «Analisi in corso… profondità n/N» (niente ridisegno completo). */
+function apPaintProgress() {
+  var els = document.querySelectorAll('.analisi-nota .analisi-busy');
+  if (!els.length || !apJob) return;
+  var txt = 'Analisi in corso… profondità ' + (apJob.depth || 0) + '/' + apJob.target +
+    (apJob.phase === 'B' ? ' (minacce dell\'avversario, 2/2)' : ' (posizione, 1/2)');
+  for (var i = 0; i < els.length; i++) els[i].textContent = txt;
 }
 
 function apOnLine(line) {
@@ -3161,25 +3223,32 @@ function apOnLine(line) {
   if (line.indexOf('bestmove') !== 0 || !apJob) return;
   var job = apJob;
   apJob = null;
-  var stale = apStopping || job.fen !== apWanted;
+  var stale = apStopping || !apWanted || job.key !== apWanted.key;
   apStopping = false;
   if (!stale) {
-    var part = apPartial[job.fen] || {};
+    var part = apPartial[job.key] || {};
     part[job.phase] = { lines: job.lines, ms: Date.now() - job.t0, depth: job.depth, posFen: job.posFen };
-    apPartial[job.fen] = part;
-    if (part.A && part.B) apFinish(job.fen);
+    apPartial[job.key] = part;
+    if (part.A && part.B) apFinish({ key: job.key, fen: job.fen, depth: job.target });
     else paintAnalisiPotenziata();
   }
   apKick();
 }
 
-function apFinish(fen) {
-  var part = apPartial[fen];
-  delete apPartial[fen];
-  var data = apBuild(fen, part);
-  apCache[fen] = data;
-  apCacheKeys.push(fen);
+function apFinish(w) {
+  var part = apPartial[w.key];
+  delete apPartial[w.key];
+  var data = apBuild(w.fen, part);
+  data.target = w.depth;
+  apCache[w.key] = data;
+  apCacheKeys.push(w.key);
   if (apCacheKeys.length > 60) delete apCache[apCacheKeys.shift()];
+  // tempo misurato a questa profondità (solo se raggiunta per intero)
+  if (data.depth >= w.depth && data.ms > 0) {
+    apTimes[w.depth] = data.ms;
+    try { localStorage.setItem('scacchi-ap-tempi', JSON.stringify(apTimes)); } catch (e) {}
+    syncApDepthUi();
+  }
   paintAnalisiPotenziata();
 }
 
@@ -3224,8 +3293,7 @@ function apBuild(fen, part) {
     });
     if (linesB[0] && bestA != null) {
       var drop = Math.max(-10000, Math.min(10000, bestA)) - Math.max(-10000, Math.min(10000, -linesB[0].cp)); // quanto perde chi muove se "passa"
-      data.sec[mover].note = 'Valutazione per il ' + (mover === 'w' ? 'Bianco' : 'Nero') + ': ' +
-        apScoreTxt(bestA) + (drop >= 150 ? '; se non reagisce scende a ' + apScoreTxt(-linesB[0].cp) : '; stabile anche se non reagisce');
+      data.sec[mover].note = 'Valutazione ' + apScoreTxt(bestA) + (drop >= 150 ? ' → ' + apScoreTxt(-linesB[0].cp) + ' se non reagisce' : ', stabile');
     }
   }
   // A: pericoli per chi muove anche giocando la linea migliore
@@ -3250,87 +3318,137 @@ function apBuild(fen, part) {
   return data;
 }
 
-function apItemText(it) {
-  var parts = [];
+/* Una voce di pericolo in tre righe: titolo, dettagli, linea di Stockfish. */
+function apItemParts(it) {
   var pre = it.forced ? 'Anche con ' + it.forced + ': ' : '';
-  if (it.mateIn && (!it.key || it.mateIn <= 2)) return pre + 'Matto in ' + it.mateIn + '. Linea: ' + it.line;
+  if (it.mateIn && (!it.key || it.mateIn <= 2)) return { head: pre + 'Matto in ' + it.mateIn, det: '', line: it.line };
   var k = it.key;
-  var head = (it.mateIn ? 'Matto in ' + it.mateIn + ', prima ' : '') + apNomeLabel(k.type, k.origin) + ' perso ' + apMosseTxt(k.n) + ' (−' + it.net + ')';
-  if (it.motif) parts.push(it.motif.kind + (it.motif.n > 1 ? ' ' + apMosseTxt(it.motif.n) : '') + ' con ' + it.motif.san + ' su ' + it.motif.txt);
-  it.pins.forEach(function(p) { parts.push(p); });
-  it.tags.forEach(function(t) { parts.push(t); });
-  return pre + head + (parts.length ? ': ' + parts.join('; ') : '') + '. Linea: ' + it.line;
+  var head = pre + apNomeLabel(k.type, k.origin) + ' perso ' + apMosseTxt(k.n) + ' (−' + it.net + ')';
+  var det = [];
+  if (it.mateIn) det.push('poi matto in ' + it.mateIn);
+  if (it.motif) det.push(it.motif.kind + (it.motif.n > 1 ? ' ' + apMosseTxt(it.motif.n) : '') + ': ' + it.motif.san + ' su ' + it.motif.txt);
+  it.pins.forEach(function(p) { det.push(p); });
+  it.tags.forEach(function(t) { det.push(t); });
+  return { head: head, det: det.join(' · '), line: it.line };
+}
+
+function apItemText(it) {
+  var p = apItemParts(it);
+  return p.head + (p.det ? ': ' + p.det : '') + '. Linea: ' + p.line;
+}
+
+function apDiv(cls, text) {
+  var d = document.createElement('div');
+  d.className = cls;
+  if (text != null) d.textContent = text;
+  return d;
+}
+
+function apSectionOpen(which) {
+  try { return localStorage.getItem('scacchi-ap-open-' + which) !== '0'; } catch (e) { return true; }
 }
 
 function analisiPotenziataNode(data, busy) {
-  var box = document.createElement('div');
-  var title = document.createElement('div');
-  title.className = 'analisi-titolo';
-  title.textContent = 'Analisi potenziata';
-  box.appendChild(title);
+  var box = apDiv('analisi-box');
+  var head = apDiv('analisi-titolo');
+  head.appendChild(apDiv('analisi-titolo-t', 'Analisi potenziata'));
+  if (data) {
+    head.appendChild(apDiv('analisi-meta', 'Stockfish d' + data.depth + (data.target && data.depth < data.target ? '/' + data.target : '') +
+      ' · ' + AP_MULTIPV + ' linee · ' + apFmt(data.ms / 1000) + ' s'));
+  }
+  box.appendChild(head);
   if (!data) {
-    var w = document.createElement('div');
-    w.className = 'analisi-riga analisi-busy';
-    w.textContent = busy || 'Analisi in corso…';
-    box.appendChild(w);
+    box.appendChild(apDiv('analisi-busy', busy || 'Analisi in corso…'));
     return box;
   }
-  var meta = document.createElement('div');
-  meta.className = 'analisi-meta';
-  meta.textContent = 'Stockfish d' + data.depth + ', ' + AP_MULTIPV + ' linee, ' + apFmt(data.ms / 1000) + ' s';
-  box.appendChild(meta);
   var nomi = { w: 'Bianco', b: 'Nero' };
   [data.mover, apOther(data.mover)].forEach(function(color) {
-    var sec = document.createElement('div');
-    sec.className = 'analisi-sez analisi-' + (color === data.mover ? 'mover' : 'other');
-    var h = document.createElement('div');
-    h.className = 'analisi-h';
-    h.textContent = 'Pericoli per il ' + nomi[color] + (color === data.mover ? ' (se non reagisce)' : ' (mosse del ' + nomi[data.mover] + ' ora)');
-    sec.appendChild(h);
-    var lines = [];
-    if (color === data.mover && data.inCheck) lines.push('Sotto scacco: prima para lo scacco.');
-    data.sec[color].items.slice(0, 3).forEach(function(it) { lines.push('⚠ ' + apItemText(it)); });
-    if (!data.sec[color].items.length && !(color === data.mover && data.inCheck)) lines.push('Stockfish non vede perdite di materiale.');
-    if (data.sec[color].note) lines.push(data.sec[color].note);
+    var which = color === data.mover ? 'mover' : 'other';
+    var all = data.sec[color].items;
+    var items = all.slice(0, 3);
+    var sec = document.createElement('details');
+    sec.className = 'analisi-sez analisi-' + which;
+    sec.open = apSectionOpen(which);
+    sec.addEventListener('toggle', function() {
+      try { localStorage.setItem('scacchi-ap-open-' + which, sec.open ? '1' : '0'); } catch (e) {}
+    });
+    var sum = document.createElement('summary');
+    sum.className = 'analisi-h';
+    sum.appendChild(apDiv('analisi-h-t', nomi[color]));
+    var badge = document.createElement('span');
+    badge.className = 'analisi-count' + (all.length ? ' analisi-count-on' : '');
+    badge.textContent = String(all.length);
+    sum.appendChild(badge);
+    sum.appendChild(apDiv('analisi-h-sub', color === data.mover ? 'pericoli se non reagisce' : 'pericoli dalle mosse del ' + nomi[data.mover]));
+    sec.appendChild(sum);
+    if (color === data.mover && data.inCheck) sec.appendChild(apDiv('analisi-riga', 'Sotto scacco: prima para lo scacco.'));
+    items.forEach(function(it) {
+      var p = apItemParts(it);
+      var row = apDiv('analisi-item');
+      row.appendChild(apDiv('analisi-item-h', '⚠ ' + p.head));
+      if (p.det) row.appendChild(apDiv('analisi-item-d', p.det));
+      row.appendChild(apDiv('analisi-linea', p.line));
+      sec.appendChild(row);
+    });
+    if (!all.length && !(color === data.mover && data.inCheck)) sec.appendChild(apDiv('analisi-riga analisi-ok', 'Nessuna perdita di materiale vista da Stockfish.'));
+    if (data.sec[color].note) sec.appendChild(apDiv('analisi-riga analisi-eval', data.sec[color].note));
     var pr = data.pressure[color];
     var hot = pr.filter(function(x) { return data.danger[x.sq] === color; });
     var rest = pr.filter(function(x) { return data.danger[x.sq] !== color; });
     var shown = hot.concat(rest).slice(0, 3);
     if (shown.length) {
-      lines.push('Pressione: ' + shown.map(function(x) {
-        return (data.danger[x.sq] === color ? '‼ ' : '') + x.label + ' ' + apFmt(x.p) + ' (' + x.n + '×10/' + x.sum + ')';
-      }).join('; '));
+      var pl = apDiv('analisi-riga analisi-press');
+      var lab = document.createElement('span');
+      lab.className = 'analisi-press-l';
+      lab.textContent = 'Pressione ';
+      pl.appendChild(lab);
+      shown.forEach(function(x, n) {
+        var s = document.createElement('span');
+        var hotOne = data.danger[x.sq] === color;
+        if (hotOne) s.className = 'analisi-press-hot';
+        s.textContent = (n ? '; ' : '') + (hotOne ? '‼ ' : '') + x.label + ' ' + apFmt(x.p) + ' (' + x.n + '×10/' + x.sum + ')';
+        pl.appendChild(s);
+      });
+      sec.appendChild(pl);
     }
-    lines.forEach(function(t) {
-      var d = document.createElement('div');
-      d.className = 'analisi-riga' + (t.charAt(0) === '⚠' ? ' analisi-pericolo' : '');
-      d.textContent = t;
-      sec.appendChild(d);
-    });
     box.appendChild(sec);
   });
   return box;
 }
 
+/* Pannello destro più largo con l'analisi: la scacchiera si ridimensiona (chessboard.js
+ * misura il contenitore solo quando disegna), così non viene tagliata. */
+function apSetPanelWide(on) {
+  var $rp = $('.right-panel');
+  if (!$rp.length || $rp.hasClass('ap-on') === on) return;
+  $rp.toggleClass('ap-on', on);
+  requestAnimationFrame(function() {
+    try {
+      if (board && typeof board.resize === 'function') {
+        board.resize();
+        applyActiveOverlays();
+      }
+    } catch (e) {}
+  });
+}
+
 function paintAnalisiPotenziata() {
+  syncApDepthUi();
   var $sq = $('#myBoard .square-55d63');
   $sq.removeClass('hl-rischio-mover hl-rischio-other hl-pressione-w hl-pressione-b hl-pressione-pericolo').removeAttr('data-pressione');
   var fen = '';
   if (showAnalisiPotenziata && !isSetupMode) {
     try { fen = viewChess().fen(); } catch (e) { fen = ''; }
   }
-  var data = fen ? apCache[fen] || null : null;
+  apSetPanelWide(!!fen);
+  var key = fen ? apKey(fen) : '';
+  var data = key ? apCache[key] || null : null;
   var busy = '';
   if (fen && !data) {
-    apWanted = fen;
-    if (!stockfishWorkerUrl) busy = 'Attendo Stockfish…';
-    else {
-      var part = apPartial[fen] || {};
-      busy = part.A ? 'Analisi in corso… (minacce dell\'avversario)' : 'Analisi in corso…';
-    }
-    apKick();
+    apWanted = { key: key, fen: fen, depth: apDepth() };
+    busy = stockfishWorkerUrl ? 'Analisi in corso… profondità 0/' + apDepth() : 'Attendo Stockfish…';
   } else if (!fen) {
-    apWanted = '';
+    apWanted = null;
     if (apJob && apStockfish && !apStopping) { apStopping = true; try { apStockfish.postMessage('stop'); } catch (e2) {} }
   }
   ['analisiNota', 'analisiNotaRight'].forEach(function(id) {
@@ -3341,6 +3459,7 @@ function paintAnalisiPotenziata() {
     el.hidden = false;
     el.appendChild(analisiPotenziataNode(data, busy));
   });
+  if (fen && !data) { apKick(); apPaintProgress(); }
   if (!data) return;
   Object.keys(data.danger).forEach(function(s) {
     $('#myBoard .square-' + s).addClass(data.danger[s] === data.mover ? 'hl-rischio-mover' : 'hl-rischio-other');
@@ -3514,6 +3633,7 @@ function loadOverlaySwitches() {
   $('#switchChiVince').prop('checked', showChiVince);
   $('#switchMossaMigliore').prop('checked', showAutoHint);
   $('#switchAnalisiPotenziata').prop('checked', showAnalisiPotenziata);
+  syncApDepthUi();
   paintArchivio();
   paintApertura();
   paintChiVince();
@@ -3551,9 +3671,19 @@ function bindOverlaySwitches() {
   });
   wire('switchAnalisiPotenziata', 'scacchi-switch-analisi-potenziata', function(on) {
     showAnalisiPotenziata = on;
+    syncApDepthUi();
+  });
+  $('#apDepthSlider').on('input', function() {
+    var v = parseInt($(this).val(), 10);
+    if (isNaN(v)) return;
+    apDepthUser = Math.max(AP_DEPTH_MIN, Math.min(AP_DEPTH_MAX, v));
+    try { localStorage.setItem('scacchi-ap-depth', String(apDepthUser)); } catch (e) {}
+    syncApDepthUi();
+    if (showAnalisiPotenziata) paintAnalisiPotenziata();
   });
   wire('switchMossaMigliore', 'scacchi-switch-mossa-migliore', function(on) {
     showAutoHint = on;
+    syncApDepthUi();
     if (!on) clearHint(true);
     else maybeAutoHint();
   });
@@ -4498,10 +4628,12 @@ $('#asymmetricToggle').on('change', function() {
     $('#strengthSlider').on('input', function() {
     strengthLevel = parseInt($(this).val());
     $('#strengthValue').text(strengthLevel);
+    syncApDepthUi();
   });
   $('#strengthSliderBlack').on('input', function() {
     strengthLevelBlack = parseInt($(this).val());
     $('#strengthValueBlack').text(strengthLevelBlack);
+    syncApDepthUi();
   });
   $('#skillSlider').on('input', function() {
     skillLevel = parseInt($(this).val());

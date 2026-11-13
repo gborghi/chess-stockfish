@@ -659,26 +659,60 @@ html, body {
 .apertura-nota[hidden],
 .archivio-nota[hidden],
 .chi-vince-nota[hidden] { display: none !important; }
-/* Analisi potenziata: rischi forchetta / attacco doppio / scoperta + pressione */
+/* Analisi potenziata: riquadro compatto (titolo, sezioni comprimibili, pericoli, pressione) */
 .analisi-nota {
-  font-size: 0.74rem;
-  line-height: 1.25;
-  margin: 0.15rem 0 0;
+  width: 100%;
+  margin: 2px 0 0;
   text-align: left;
   color: var(--ink);
-  max-width: 100%;
+  font-size: 0.72rem;
+  line-height: 1.22;
   word-break: break-word;
+  border-top: 1px solid rgba(43, 33, 24, 0.35);
+  padding-top: 4px;
 }
 .analisi-nota[hidden] { display: none !important; }
-.analisi-nota .analisi-titolo {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.8rem;
-  text-align: center;
-}
-.analisi-nota .analisi-sez { margin-top: 0.2rem; padding-left: 0.35rem; border-left: 3px solid #a21caf; }
+.analisi-nota .analisi-titolo { display: flex; flex-direction: column; align-items: center; margin-bottom: 3px; }
+.analisi-nota .analisi-titolo-t { font-family: var(--font-display); font-weight: 700; font-size: 0.82rem; letter-spacing: 0.02em; }
+.analisi-nota .analisi-meta { font-size: 0.64rem; opacity: 0.7; text-align: center; }
+.analisi-nota .analisi-busy { font-style: italic; text-align: center; padding: 2px 0; }
+.analisi-nota .analisi-sez { margin: 3px 0 0; padding: 0 0 2px 6px; border-left: 3px solid #a21caf; }
 .analisi-nota .analisi-sez.analisi-other { border-left-color: #b45309; }
-.analisi-nota .analisi-h { font-weight: 700; }
+.analisi-nota summary.analisi-h {
+  list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 4px;
+  font-weight: 700; font-size: 0.74rem;
+}
+.analisi-nota summary.analisi-h::-webkit-details-marker { display: none; }
+.analisi-nota summary.analisi-h::before { content: '▸'; font-size: 0.65rem; display: inline-block; transition: transform 0.15s; }
+.analisi-nota details[open] > summary.analisi-h::before { transform: rotate(90deg); }
+.analisi-nota .analisi-h-t { flex: 1 1 auto; min-width: 0; }
+.analisi-nota .analisi-h-sub { flex-basis: 100%; font-weight: 400; font-style: italic; font-size: 0.66rem; opacity: 0.8; }
+.analisi-nota .analisi-count {
+  min-width: 1.3em; text-align: center; border-radius: 8px; padding: 0 4px;
+  font-size: 0.64rem; background: rgba(43, 33, 24, 0.15);
+}
+.analisi-nota .analisi-count-on { background: #b91c1c; color: #fff; }
+.analisi-nota .analisi-item { margin-top: 3px; }
+.analisi-nota .analisi-item-h { font-weight: 700; color: #7f1d1d; }
+.analisi-nota .analisi-item-d { font-size: 0.68rem; }
+.analisi-nota .analisi-linea { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.64rem; opacity: 0.85; }
+.analisi-nota .analisi-riga { margin-top: 2px; font-size: 0.68rem; }
+.analisi-nota .analisi-ok { opacity: 0.75; font-style: italic; }
+.analisi-nota .analisi-press-l { font-weight: 700; }
+.analisi-nota .analisi-press-hot { color: #b91c1c; font-weight: 700; }
+/* Pannello destro più largo solo con l'analisi attiva; il riquadro scorre solo se serve */
+.right-panel.ap-on { width: clamp(150px, 16vw, 230px); max-width: 230px; }
+.right-panel.ap-on #evalMetaRight { flex: 0 1 auto; min-height: 0; overflow-y: auto; align-items: stretch; }
+.right-panel.ap-on .captured-panel { flex: 0 0 auto; }
+/* Voci che usano Stockfish + slider profondità collegato, rientrato sotto di esse */
+.segnalazioni .form-check.sf-voce { border-left: 2px solid rgba(43, 33, 24, 0.35); margin-left: -8px; padding-left: 6px !important; }
+.segnalazioni .ap-depth-box {
+  margin: 0 0 0 -8px; padding: 5px 0 2px 18px;
+  border-left: 2px solid rgba(43, 33, 24, 0.35);
+}
+.segnalazioni .ap-depth-box .slider-row { margin-bottom: 2px; gap: 6px; }
+.segnalazioni .ap-depth-lbl { display: block; font-size: 13px; font-style: italic; margin: 0 0 1px; }
+.segnalazioni .ap-depth-time { display: block; font-size: 0.68rem; line-height: 1.2; opacity: 0.8; font-style: italic; }
 #myBoard .square-55d63.hl-rischio-mover { outline: 3px dashed #a21caf; outline-offset: -4px; }
 #myBoard .square-55d63.hl-rischio-other { outline: 3px dotted #b45309; outline-offset: -4px; }
 #myBoard .square-55d63[data-pressione] { position: relative; }
