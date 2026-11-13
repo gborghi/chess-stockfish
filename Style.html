@@ -659,6 +659,42 @@ html, body {
 .apertura-nota[hidden],
 .archivio-nota[hidden],
 .chi-vince-nota[hidden] { display: none !important; }
+/* Analisi potenziata: rischi forchetta / attacco doppio / scoperta + pressione */
+.analisi-nota {
+  font-size: 0.74rem;
+  line-height: 1.25;
+  margin: 0.15rem 0 0;
+  text-align: left;
+  color: var(--ink);
+  max-width: 100%;
+  word-break: break-word;
+}
+.analisi-nota[hidden] { display: none !important; }
+.analisi-nota .analisi-titolo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-align: center;
+}
+.analisi-nota .analisi-sez { margin-top: 0.2rem; padding-left: 0.35rem; border-left: 3px solid #a21caf; }
+.analisi-nota .analisi-sez.analisi-other { border-left-color: #b45309; }
+.analisi-nota .analisi-h { font-weight: 700; }
+#myBoard .square-55d63.hl-rischio-mover { outline: 3px dashed #a21caf; outline-offset: -4px; }
+#myBoard .square-55d63.hl-rischio-other { outline: 3px dotted #b45309; outline-offset: -4px; }
+#myBoard .square-55d63[data-pressione] { position: relative; }
+#myBoard .square-55d63[data-pressione]::before {
+  content: attr(data-pressione);
+  position: absolute;
+  left: 2px;
+  bottom: 2px;
+  z-index: 8;
+  font: 700 10px/1 sans-serif;
+  padding: 1px 3px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+#myBoard .square-55d63.hl-pressione-w::before { background: #fff7ed; color: #7c2d12; box-shadow: 0 0 0 1px #7c2d12; }
+#myBoard .square-55d63.hl-pressione-b::before { background: #1f2937; color: #fde68a; box-shadow: 0 0 0 1px #fde68a; }
 .glyph-move {
   width: 22px;
   height: 22px;
