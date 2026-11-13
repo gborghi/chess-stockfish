@@ -222,10 +222,19 @@
           </div>
           <!-- Compare solo con Mossa migliore o Analisi potenziata (le voci che usano Stockfish) -->
           <div id="apDepthBox" class="ap-depth-box d-none">
-            <label class="ap-depth-lbl" for="apDepthSlider">Profondità Stockfish</label>
-            <div class="slider-row">
-              <input type="range" class="form-range" id="apDepthSlider" min="6" max="20" value="12" step="1" aria-label="Profondità analisi Stockfish">
-              <span class="badge bg-primary" id="apDepthValue">12</span>
+            <div class="sf-slider" id="sfDepthBlock">
+              <label class="ap-depth-lbl" for="apDepthSlider">Profondità Stockfish</label>
+              <div class="slider-row">
+                <input type="range" class="form-range" id="apDepthSlider" min="5" max="20" value="5" step="1" aria-label="Profondità Stockfish (tutto a sinistra = Auto)">
+                <span class="badge bg-primary" id="apDepthValue">Auto</span>
+              </div>
+            </div>
+            <div class="sf-slider d-none" id="sfSkillBlock">
+              <label class="ap-depth-lbl" for="hintSkillSlider">Skill mossa migliore</label>
+              <div class="slider-row">
+                <input type="range" class="form-range" id="hintSkillSlider" min="-1" max="20" value="-1" step="1" aria-label="Skill mossa migliore (tutto a sinistra = Auto)">
+                <span class="badge bg-primary" id="hintSkillValue">Auto</span>
+              </div>
             </div>
             <small id="apDepthTime" class="ap-depth-time"></small>
           </div>
@@ -346,12 +355,12 @@
           </div>
 
           <div class="right-panel d-none d-md-flex">
-            <div class="ctrl-group w-100 eval-meta" id="evalMetaRight">
+            <div class="ctrl-group w-100 eval-meta" id="evalMetaRight" data-tv-scroll-box>
               <div id="momentumGlyphsRight" class="momentum-glyphs" aria-live="polite" hidden></div>
               <div id="scaccoNotaRight" class="scacco-nota" aria-live="assertive" hidden></div>
               <div id="aperturaNotaRight" class="apertura-nota" hidden></div>
               <div id="chiVinceNotaRight" class="chi-vince-nota" aria-live="polite" hidden></div>
-              <div id="analisiNotaRight" class="analisi-nota" aria-live="polite" hidden></div>
+              <div id="analisiNotaRight" class="analisi-nota" aria-live="polite" tabindex="-1" data-tv-scroll hidden></div>
               <div id="archivioNotaRight" class="archivio-nota" hidden></div>
               <strong id="gameResultRight" class="d-block text-center text-danger small"></strong>
             </div>

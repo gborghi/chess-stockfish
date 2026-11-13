@@ -712,6 +712,12 @@ html, body {
 }
 .segnalazioni .ap-depth-box .slider-row { margin-bottom: 2px; gap: 6px; }
 .segnalazioni .ap-depth-lbl { display: block; font-size: 13px; font-style: italic; margin: 0 0 1px; }
+.segnalazioni .sf-slider { padding: 2px 4px 0; border-radius: 4px; }
+.segnalazioni .sf-slider + .sf-slider { margin-top: 8px; }
+.segnalazioni .ap-depth-box .badge { min-width: 3.2em; text-align: center; }
+/* focus telecomando sull'intero blocco (etichetta + slider), senza coprire le righe vicine */
+.segnalazioni .sf-slider.tv-remote-focus { outline-width: 4px !important; outline-offset: 1px; box-shadow: none !important; }
+.analisi-nota.tv-remote-focus { outline: 4px solid #f5c518 !important; outline-offset: -4px; box-shadow: none !important; }
 .segnalazioni .ap-depth-time { display: block; font-size: 0.68rem; line-height: 1.2; opacity: 0.8; font-style: italic; }
 #myBoard .square-55d63.hl-rischio-mover { outline: 3px dashed #a21caf; outline-offset: -4px; }
 #myBoard .square-55d63.hl-rischio-other { outline: 3px dotted #b45309; outline-offset: -4px; }
