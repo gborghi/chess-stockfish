@@ -3253,7 +3253,7 @@ function apBuild(fen, part) {
 function apItemText(it) {
   var parts = [];
   var pre = it.forced ? 'Anche con ' + it.forced + ': ' : '';
-  if (it.mateIn && !it.key) return pre + 'Matto in ' + it.mateIn + '. Linea: ' + it.line;
+  if (it.mateIn && (!it.key || it.mateIn <= 2)) return pre + 'Matto in ' + it.mateIn + '. Linea: ' + it.line;
   var k = it.key;
   var head = (it.mateIn ? 'Matto in ' + it.mateIn + ', prima ' : '') + apNomeLabel(k.type, k.origin) + ' perso ' + apMosseTxt(k.n) + ' (−' + it.net + ')';
   if (it.motif) parts.push(it.motif.kind + (it.motif.n > 1 ? ' ' + apMosseTxt(it.motif.n) : '') + ' con ' + it.motif.san + ' su ' + it.motif.txt);
