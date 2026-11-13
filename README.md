@@ -26,10 +26,9 @@ Deploy: push su `main` → GitHub Actions (`.github/workflows/deploy.yml`) pubbl
 
 ## Segnalazione «Analisi potenziata»
 
-Voce unica nella checklist Segnalazioni (salvata in `localStorage` come `scacchi-switch-analisi-potenziata`). Calcolo geometrico leggero sulla posizione mostrata, niente Stockfish:
+Voce unica nella checklist Segnalazioni (salvata in `localStorage` come `scacchi-switch-analisi-potenziata`). Le minacce vengono **solo da Stockfish**, su un terzo worker dedicato (creato quando la voce è attiva), separato dal motore di gioco e da quello della «Mossa migliore».
 
-- **Rischi per chi muove** = mosse che l'avversario potrebbe fare se il tratto passasse a lui («se non reagisce»; saltato sotto scacco). **Rischi per l'altro** = mosse legali di chi muove ora.
-- Bersaglio di valore: il re (scacco) o un pezzo non pedone che vale più dell'attaccante o non è difeso. Il pezzo mosso conta solo se sulla casa d'arrivo non è in presa (SEE).
-- **Forchetta**: cavallo o pedone mosso attacca ≥ 2 bersagli. **Attacco doppio**: alfiere/torre/donna/re mosso attacca ≥ 2 bersagli, oppure 1 bersaglio diretto + 1 scoperto (o scacco doppio). **Scoperta**: la mossa apre la linea di un proprio alfiere/torre/donna su un bersaglio.
-- **Pressione** su ogni pezzo attaccato = 10 × n. attaccanti / somma dei valori degli attaccanti (P=1, C=3, A=3, T=5, D=9, re come attaccante = 4). Numero sul pezzo + prime 3 righe per colore.
-- Case: tratteggio viola = da dove l'avversario colpirebbe chi muove; puntinato arancio = mosse con cui chi muove colpisce l'altro.
+- Per ogni posizione mostrata: ricerca A (posizione reale) e ricerca B («mossa nulla»: stesso FEN col tratto all'avversario, saltata se chi muove è sotto scacco). MultiPV 3, Skill 20, depth = max(12, depth Mossa migliore = computer + 2), tetto `movetime` 2,5 s su TV / 4 s altrove. Cache per FEN (60 posizioni); se la posizione cambia la ricerca viene fermata. Mentre calcola: «Analisi in corso…».
+- Ogni PV (fino a 12 semimosse) è rigiocata con chess.js: bilancio materiale a fine linea (prese + promozioni, scambio statico sull'ultima presa), pezzo perso e **tra quante mosse**, motivo della mossa chiave (forchetta / attacco doppio / scoperta: la geometria serve solo a classificare le mosse di Stockfish), inchiodatura sfruttata, pezzo indifeso, difensore sovraccarico, pezzo intrappolato, matto. Linea mostrata in notazione italiana.
+- «Pericoli per chi muove (se non reagisce)» = linee B + la linea migliore A se perde comunque materiale (non per sacrifici: la valutazione deve confermarlo). «Pericoli per l'altro» = linee A. Valutazione A confrontata con B: quanto scende se non reagisce.
+- **Pressione** = 10 × n. attaccanti / somma dei valori degli attaccanti (P=1, C=3, A=3, T=5, D=9, re come attaccante = 4); badge sul pezzo, rosso e con ‼ per i pezzi che Stockfish dà in pericolo. Case dei pezzi in pericolo: tratteggio viola (chi muove) / puntinato arancio (l'altro).

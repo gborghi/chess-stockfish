@@ -703,6 +703,10 @@ html, body {
 }
 #myBoard .square-55d63.hl-pressione-w::before { background: #fff7ed; color: #7c2d12; box-shadow: 0 0 0 1px #7c2d12; }
 #myBoard .square-55d63.hl-pressione-b::before { background: #1f2937; color: #fde68a; box-shadow: 0 0 0 1px #fde68a; }
+.analisi-nota .analisi-meta { font-size: 0.66rem; opacity: 0.75; text-align: center; }
+.analisi-nota .analisi-pericolo { color: #7f1d1d; font-weight: 600; }
+.analisi-nota .analisi-busy { font-style: italic; text-align: center; }
+#myBoard .square-55d63.hl-pressione-pericolo::before { background: #b91c1c !important; color: #fff !important; box-shadow: 0 0 0 2px #fde68a !important; font-size: 12px; }
 .glyph-move {
   width: 22px;
   height: 22px;
@@ -4613,48 +4617,63 @@ function paintEnPrise() {
   });
 }
 
-/* ===== Analisi potenziata =====
- * Rischi per entrambi i colori, calcolati sulla posizione mostrata (viewChess):
- * - per chi NON muove: le mosse legali reali di chi ha il tratto;
- * - per chi muove: le mosse dell'avversario se il tratto passasse a lui
- *   (mossa nulla: "se non reagisci"). Saltato quando chi muove è sotto scacco.
- * Bersaglio "di valore": il re (scacco) oppure un pezzo non pedone che vale
- * più di chi lo attacca o che non è difeso. Pedoni esclusi come bersagli.
- * Forchetta: il pezzo mosso è cavallo o pedone e attacca >= 2 bersagli.
- * Attacco doppio: il pezzo mosso è alfiere/torre/donna/re e attacca >= 2
- *   bersagli, oppure un bersaglio del pezzo mosso + uno scoperto.
- * Scoperta: spostando un pezzo si apre la linea di un proprio alfiere/torre/
- *   donna che ora attacca un bersaglio prima coperto.
- * Il pezzo mosso conta solo se sulla casa d'arrivo non è "in presa" (SEE).
- * Pressione su un pezzo attaccato = 10 x (numero di attaccanti) / (somma dei
- *   valori degli attaccanti); P=1, C=3, A=3, T=5, D=9, re come attaccante = 4
- *   (valore di combattimento). Più è alta, più attaccanti economici.
- * Tutto geometrico su una mappa {casa: pezzo}, memo per FEN: niente Stockfish.
+/* ===== Analisi potenziata (Stockfish) =====
+ * Fonte delle minacce: SOLO Stockfish, su un worker dedicato (apStockfish),
+ * separato dal motore di gioco e da quello della «Mossa migliore".
+ * Per ogni FEN mostrata (viewChess) due ricerche MultiPV 3, skill 20,
+ * depth >= quella della Mossa migliore (computer +2, minimo 12), con tetto
+ * di tempo (movetime: 2,5 s su TV, 4 s altrove):
+ *   A) posizione reale, tratto a chi muove -> minacce contro l'altro e
+ *      pericoli per chi muove anche nella sua linea migliore;
+ *   B) "mossa nulla" (stessa posizione, tratto all'avversario; solo se chi
+ *      muove non è sotto scacco) -> minacce dell'avversario se non reagisci.
+ * Ogni linea (PV, fino a 12 semimosse) viene rigiocata con chess.js:
+ * pezzi persi lungo la PV (bilancio materiale a fine linea, con scambio
+ * statico sull'ultima presa), in quante mosse, motivo della mossa chiave
+ * (forchetta / attacco doppio / scoperta, classificati con la geometria),
+ * inchiodature sfruttate, pezzo indifeso, sovraccarico, intrappolato,
+ * matto. La valutazione B confrontata con A dice quanto "crolla" se non reagisci.
+ * Pressione = 10 x n. attaccanti / somma valori (P1 C3 A3 T5 D9, re 4),
+ * evidenziata sui pezzi che Stockfish dà in pericolo.
+ * Cache per FEN; ricerca annullata se la posizione cambia.
  */
 var showAnalisiPotenziata = false;
-var analisiMemo = { fen: '', data: null };
-var AP_NOMI = { p: 'pedone', n: 'cavallo', b: 'alfiere', r: 'torre', q: 'donna', k: 're' };
 var AP_SIGLA = { p: '', n: 'C', b: 'A', r: 'T', q: 'D', k: 'R' };
 var AP_PRESS_VAL = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 4 };
+var AP_MULTIPV = 3;
+var AP_MAX_PLIES = 12;
+var stockfishWorkerUrl = '';
+var apStockfish = null;
+var apReady = false;
+var apCache = {};
+var apCacheKeys = [];
+var apJob = null;       // {fen, phase:'A'|'B', id, lines:{}, t0, depth}
+var apJobId = 0;
+var apWanted = '';      // FEN che vogliamo analizzare
+var apPartial = {};     // fen -> {A:..., B:...}
+var apStopping = false;
 
 function apVal(type) { return type === 'k' ? KING_ORDER : PIECE_VALUE[type]; }
+function apOther(c) { return c === 'w' ? 'b' : 'w'; }
 
-function apDefended(occ, sq, color) {
-  var squares = Object.keys(occ);
-  for (var i = 0; i < squares.length; i++) {
-    var p = occ[squares[i]];
-    if (!p || p.color !== color || squares[i] === sq) continue;
-    if (geometricallyAttacks(occ, squares[i], sq)) return true;
-  }
-  return false;
+function apDefenders(occ, sq, color) {
+  var out = [];
+  Object.keys(occ).forEach(function(s) {
+    var p = occ[s];
+    if (!p || p.color !== color || s === sq) return;
+    if (geometricallyAttacks(occ, s, sq)) out.push(s);
+  });
+  return out;
 }
+
+function apAttackersOn(occ, sq, color) { return apDefenders(occ, sq, color); }
 
 function apIsTarget(occ, sq, attackerVal) {
   var t = occ[sq];
   if (!t) return false;
   if (t.type === 'k') return true;
   if (t.type === 'p') return false;
-  return apVal(t.type) > attackerVal || !apDefended(occ, sq, t.color);
+  return apVal(t.type) > attackerVal || !apDefenders(occ, sq, t.color).length;
 }
 
 function apTargetsFrom(occ, from, enemy) {
@@ -4671,14 +4690,6 @@ function apTargetsFrom(occ, from, enemy) {
   return out;
 }
 
-function apApplyMove(occ, m) {
-  var next = cloneOcc(occ);
-  delete next[m.from];
-  if (m.flags && m.flags.indexOf('e') !== -1) delete next[m.to.charAt(0) + m.from.charAt(1)];
-  next[m.to] = { type: m.promotion || m.piece, color: m.color };
-  return next;
-}
-
 function apLabel(occ, sq) {
   var p = occ[sq];
   if (!p) return sq;
@@ -4686,104 +4697,14 @@ function apLabel(occ, sq) {
   return AP_SIGLA[p.type] + sq;
 }
 
+function apNomeLabel(type, sq) {
+  return type === 'p' ? 'pedone ' + sq : AP_SIGLA[type] + sq;
+}
+
 /* SAN inglese di chess.js -> sigle italiane (C, A, T, D, R). */
 function apSanIt(san) {
   var map = { N: 'C', B: 'A', R: 'T', Q: 'D', K: 'R' };
   return String(san || '').replace(/[NBRQK]/g, function(c) { return map[c]; });
-}
-
-/* Minacce che `side` può creare con una mossa legale nella posizione `fen`. */
-function apThreats(fen, side) {
-  var res = { forchetta: [], doppio: [], scoperta: [], squares: {} };
-  var ch;
-  try { ch = new Chess(fen); } catch (e) { return res; }
-  if (ch.turn() !== side) return res;
-  var enemy = side === 'w' ? 'b' : 'w';
-  var occ = boardOccupancy(ch);
-  var sliders = Object.keys(occ).filter(function(sq) {
-    var p = occ[sq];
-    return p.color === side && (p.type === 'b' || p.type === 'r' || p.type === 'q');
-  });
-  var moves = [];
-  try { moves = ch.moves({ verbose: true }); } catch (e2) { moves = []; }
-  moves.forEach(function(m) {
-    if (m.flags.indexOf('k') !== -1 || m.flags.indexOf('q') !== -1) return;
-    var next = apApplyMove(occ, m);
-    var mover = next[m.to];
-    var direct = [];
-    var safe = seeExchange(next, m.to, enemy, apVal(mover.type), 0) === 0;
-    if (safe) {
-      var oldTargets = {};
-      apTargetsFrom(occ, m.from, enemy).forEach(function(s) { oldTargets[s] = true; });
-      direct = apTargetsFrom(next, m.to, enemy);
-      if (!direct.some(function(s) { return !oldTargets[s]; })) direct = [];
-    }
-    var disc = [];
-    sliders.forEach(function(s) {
-      if (s === m.from || !next[s]) return;
-      apTargetsFrom(next, s, enemy).forEach(function(x) {
-        // nuovo attacco solo perché la linea si è aperta
-        if (x !== m.to && !geometricallyAttacks(occ, s, x)) disc.push({ from: s, to: x });
-      });
-    });
-    var score = function(list) {
-      return list.reduce(function(a, sq) { return a + (next[sq].type === 'k' ? 20 : apVal(next[sq].type)); }, 0);
-    };
-    var entry;
-    if (direct.length >= 2) {
-      entry = { san: apSanIt(m.san), to: m.to, targets: direct.map(function(s) { return apLabel(next, s); }), score: score(direct) };
-      if (mover.type === 'n' || mover.type === 'p') res.forchetta.push(entry);
-      else res.doppio.push(entry);
-      res.squares[m.to] = true;
-    } else if (direct.length === 1 && disc.length) {
-      var other = disc.filter(function(d) { return d.to !== direct[0]; })[0];
-      if (other) {
-        res.doppio.push({ san: apSanIt(m.san), to: m.to,
-          targets: [apLabel(next, direct[0]), apLabel(next, other.to)],
-          score: score([direct[0], other.to]) });
-        res.squares[m.to] = true;
-      } else if (next[direct[0]].type === 'k') {
-        res.doppio.push({ san: apSanIt(m.san), to: m.to,
-          targets: [apLabel(next, direct[0]) + ' (scacco doppio)'], score: 25 });
-        res.squares[m.to] = true;
-      }
-    }
-    if (disc.length) {
-      res.scoperta.push({ san: apSanIt(m.san), to: m.to, from: m.from,
-        targets: disc.map(function(d) { return apLabel(next, d.from) + '→' + apLabel(next, d.to); }),
-        score: score(disc.map(function(d) { return d.to; })) });
-      res.squares[m.from] = true;
-    }
-  });
-  ['forchetta', 'doppio', 'scoperta'].forEach(function(k) {
-    res[k].sort(function(a, b) { return b.score - a.score; });
-  });
-  return res;
-}
-
-/* Pressione su ogni pezzo di `color` attaccato dall'avversario. */
-function apPressure(occ, color) {
-  var enemy = color === 'w' ? 'b' : 'w';
-  var out = [];
-  Object.keys(occ).forEach(function(sq) {
-    var p = occ[sq];
-    if (!p || p.color !== color) return;
-    var n = 0;
-    var sum = 0;
-    var who = [];
-    Object.keys(occ).forEach(function(a) {
-      var q = occ[a];
-      if (!q || q.color !== enemy) return;
-      if (!geometricallyAttacks(occ, a, sq)) return;
-      n++;
-      sum += AP_PRESS_VAL[q.type];
-      who.push(AP_PRESS_VAL[q.type]);
-    });
-    if (!n) return;
-    out.push({ sq: sq, label: apLabel(occ, sq), n: n, sum: sum, who: who, p: 10 * n / sum });
-  });
-  out.sort(function(a, b) { return b.p - a.p || apVal(occ[b.sq].type) - apVal(occ[a.sq].type); });
-  return out;
 }
 
 function apNullFen(fen) {
@@ -4793,70 +4714,436 @@ function apNullFen(fen) {
   return parts.join(' ');
 }
 
-function computeAnalisiPotenziata(fen) {
-  if (analisiMemo.fen === fen && analisiMemo.data) return analisiMemo.data;
-  var ch = new Chess(fen);
-  var mover = ch.turn();
-  var other = mover === 'w' ? 'b' : 'w';
-  var occ = boardOccupancy(ch);
-  var data = { mover: mover, risks: {}, pressure: {}, inCheck: false };
-  var inCheck = false;
-  try { inCheck = ch.in_check(); } catch (e) { inCheck = false; }
-  data.inCheck = inCheck;
-  // rischi per chi NON muove: mosse reali di chi muove
-  data.risks[other] = apThreats(fen, mover);
-  // rischi per chi muove: mosse dell'avversario se il tratto passasse a lui
-  data.risks[mover] = inCheck ? null : apThreats(apNullFen(fen), other);
-  data.pressure.w = apPressure(occ, 'w');
-  data.pressure.b = apPressure(occ, 'b');
-  analisiMemo = { fen: fen, data: data };
-  return data;
+function apMosseTxt(n) { return n <= 1 ? 'subito' : 'tra ' + n + ' mosse'; }
+
+function apScoreTxt(cp) {
+  if (cp == null) return '?';
+  if (Math.abs(cp) >= 90000) return (cp > 0 ? '+' : '−') + 'M';
+  var v = cp / 100;
+  return (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1).replace('.', ',');
+}
+
+/* Classifica geometricamente UNA mossa trovata da Stockfish. */
+function apClassify(occBefore, occAfter, m, victim) {
+  var mover = occAfter[m.to];
+  if (!mover) return null;
+  var direct = [];
+  var safe = seeExchange(occAfter, m.to, victim, apVal(mover.type), 0) === 0;
+  var old = {};
+  apTargetsFrom(occBefore, m.from, victim).forEach(function(s) { old[s] = true; });
+  var d = apTargetsFrom(occAfter, m.to, victim);
+  if (d.some(function(s) { return !old[s]; })) direct = d;
+  var disc = [];
+  Object.keys(occAfter).forEach(function(s) {
+    var p = occAfter[s];
+    if (!p || p.color !== mover.color || s === m.to) return;
+    if (p.type !== 'b' && p.type !== 'r' && p.type !== 'q') return;
+    apTargetsFrom(occAfter, s, victim).forEach(function(x) {
+      if (x !== m.to && !geometricallyAttacks(occBefore, s, x)) disc.push({ from: s, to: x });
+    });
+  });
+  if (direct.length >= 2 && (safe || direct.some(function(s) { return occAfter[s].type === 'k'; }))) {
+    return { kind: (mover.type === 'n' || mover.type === 'p') ? 'Forchetta' : 'Attacco doppio',
+      txt: direct.map(function(s) { return apLabel(occAfter, s); }).join(' e ') };
+  }
+  if (disc.length && direct.length) {
+    return { kind: 'Attacco doppio', txt: apLabel(occAfter, direct[0]) + ' e ' + apLabel(occAfter, disc[0].to) + ' (con scoperta)' };
+  }
+  if (disc.length) {
+    return { kind: 'Scoperta', txt: apLabel(occAfter, disc[0].from) + '→' + apLabel(occAfter, disc[0].to) };
+  }
+  return null;
+}
+
+/* Inchiodature di pezzi di `victim` da parte di alfieri/torri/donne di `attacker`. */
+function apPins(occ, attacker) {
+  var victim = apOther(attacker);
+  var pins = [];
+  Object.keys(occ).forEach(function(s) {
+    var p = occ[s];
+    if (!p || p.color !== attacker) return;
+    var dirs = p.type === 'b' ? BISHOP_DIR : p.type === 'r' ? ROOK_DIR : p.type === 'q' ? BISHOP_DIR.concat(ROOK_DIR) : [];
+    var a = sqXY(s);
+    dirs.forEach(function(dv) {
+      var f = a.f + dv[0], r = a.r + dv[1], first = '', sq;
+      while ((sq = sqName(f, r))) {
+        if (occ[sq]) {
+          if (!first) {
+            if (occ[sq].color !== victim || occ[sq].type === 'k') return;
+            first = sq;
+          } else {
+            var b = occ[sq];
+            if (b.color === victim && (b.type === 'k' || apVal(b.type) > apVal(occ[first].type))) {
+              pins.push({ by: s, pinned: first, behind: sq });
+            }
+            return;
+          }
+        }
+        f += dv[0]; r += dv[1];
+      }
+    });
+  });
+  return pins;
+}
+
+/* Rigioca una PV: chi minaccia = `attacker`. Ritorna il pericolo per l'altro colore. */
+function apAnalyzeLine(rootFen, pv, attacker, scoreCp, mate) {
+  var victim = apOther(attacker);
+  var ch;
+  try { ch = new Chess(rootFen); } catch (e) { return null; }
+  var ids = {};
+  var occ0 = boardOccupancy(ch);
+  Object.keys(occ0).forEach(function(s) { if (occ0[s].color === victim) ids[s] = s; });
+  var pins0 = apPins(occ0, attacker);
+  var sans = [], losses = [], gains = 0, motif = null, fens = [rootFen], lastMove = null, lastOcc = null;
+  var attMoves = 0;
+  for (var i = 0; i < pv.length && i < AP_MAX_PLIES; i++) {
+    var u = pv[i];
+    var before = boardOccupancy(ch);
+    var m = ch.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u.length > 4 ? u.charAt(4) : undefined });
+    if (!m) break;
+    var after = boardOccupancy(ch);
+    sans.push(apSanIt(m.san));
+    fens.push(ch.fen());
+    if (m.color === attacker) attMoves++;
+    if (m.captured) {
+      var capSq = m.flags.indexOf('e') !== -1 ? m.to.charAt(0) + m.from.charAt(1) : m.to;
+      if (m.color === attacker) {
+        losses.push({ ply: i, type: m.captured, origin: ids[capSq] || capSq, at: capSq, n: attMoves,
+          defended: apDefenders(before, capSq, victim).length > 0, fenBefore: fens[i] });
+        delete ids[capSq];
+      } else {
+        gains += PIECE_VALUE[m.captured] || 0;
+      }
+    }
+    if (m.color === victim && ids[m.from]) { ids[m.to] = ids[m.from]; delete ids[m.from]; }
+    if (m.color === attacker && !motif) {
+      var c = apClassify(before, after, m, victim);
+      if (c) { c.ply = i; c.san = apSanIt(m.san); c.n = attMoves; motif = c; }
+    }
+    lastMove = m; lastOcc = after;
+  }
+  // bilancio materiale reale (prese + promozioni) tra inizio e fine linea
+  var occEnd = boardOccupancy(ch);
+  var net = (apMaterial(occ0, victim) - apMaterial(occEnd, victim)) - (apMaterial(occ0, attacker) - apMaterial(occEnd, attacker));
+  // ultima presa ancora "in aria": scambio statico sulla casa
+  if (lastMove && lastMove.captured && lastOcc && lastOcc[lastMove.to]) {
+    var recap = seeExchange(lastOcc, lastMove.to, apOther(lastMove.color), apVal(lastOcc[lastMove.to].type) > 50 ? 0 : apVal(lastOcc[lastMove.to].type), 0);
+    net += lastMove.color === attacker ? -recap : recap;
+  }
+  var res = { line: sans.slice(0, 7).join(' ') + (sans.length > 7 ? ' …' : ''), cp: scoreCp, mate: mate,
+    net: net, losses: losses, motif: motif, pins: [], tags: [], key: null };
+  if (mate && mate > 0) res.mateIn = mate;
+  if (net < 1 || !losses.length) return res.mateIn ? res : null;
+  // pezzo principale perso: il più prezioso
+  var key = losses.slice().sort(function(a, b) { return (PIECE_VALUE[b.type] || 0) - (PIECE_VALUE[a.type] || 0) || a.ply - b.ply; })[0];
+  res.key = key;
+  if (!key.defended) res.tags.push('indifeso');
+  pins0.forEach(function(p) {
+    if (losses.some(function(l) { return l.origin === p.pinned || l.origin === p.behind; })) {
+      res.pins.push(apLabel(occ0, p.pinned) + ' inchiodato da ' + apLabel(occ0, p.by));
+    }
+  });
+  // sovraccarico: un difensore del pezzo perso difendeva anche un altro pezzo attaccato
+  try {
+    var ob = boardOccupancy(new Chess(key.fenBefore));
+    apDefenders(ob, key.at, victim).some(function(dsq) {
+      var also = Object.keys(ob).filter(function(s) {
+        return s !== key.at && s !== dsq && ob[s].color === victim && ob[s].type !== 'k' &&
+          geometricallyAttacks(ob, dsq, s) && apAttackersOn(ob, s, attacker).length;
+      });
+      if (also.length && apAttackersOn(ob, key.at, attacker).length) {
+        res.tags.push('sovraccarico: ' + apLabel(ob, dsq) + ' difende anche ' + apLabel(ob, also[0]));
+        return true;
+      }
+      return false;
+    });
+  } catch (e) {}
+  // intrappolato: perso dopo >= 2 mosse e, all'ultimo tratto della vittima, nessuna fuga sicura
+  if (key.n >= 2) {
+    try {
+      var vf = null;
+      for (var k = key.ply - 1; k >= 0; k--) {
+        var cc = new Chess(fens[k]);
+        if (cc.turn() === victim) { vf = cc; break; }
+      }
+      if (vf && !vf.in_check()) {
+        var occv = boardOccupancy(vf);
+        // casa del pezzo in quel momento: ripercorri le mosse
+        var where = key.origin;
+        var tmp = new Chess(rootFen);
+        for (var j = 0; j < pv.length && fens[j] !== vf.fen(); j++) {
+          var mv = tmp.move({ from: pv[j].slice(0, 2), to: pv[j].slice(2, 4), promotion: pv[j].length > 4 ? pv[j].charAt(4) : undefined });
+          if (!mv) break;
+          if (mv.from === where) where = mv.to;
+        }
+        var pc = occv[where];
+        if (pc && pc.color === victim && pc.type !== 'k' && pc.type !== 'p') {
+          var safeExit = vf.moves({ square: where, verbose: true }).some(function(mv2) {
+            var nx = apApplyMove(occv, mv2);
+            return seeExchange(nx, mv2.to, attacker, apVal(pc.type), 0) === 0;
+          });
+          if (!safeExit) res.tags.push('intrappolato');
+        }
+      }
+    } catch (e2) {}
+  }
+  return res;
+}
+
+function apMaterial(occ, color) {
+  var t = 0;
+  Object.keys(occ).forEach(function(s) { if (occ[s].color === color) t += PIECE_VALUE[occ[s].type] || 0; });
+  return t;
+}
+
+function apApplyMove(occ, m) {
+  var next = cloneOcc(occ);
+  delete next[m.from];
+  if (m.flags && m.flags.indexOf('e') !== -1) delete next[m.to.charAt(0) + m.from.charAt(1)];
+  next[m.to] = { type: m.promotion || m.piece, color: m.color };
+  return next;
+}
+
+/* Pressione su ogni pezzo di `color` attaccato dall'avversario. */
+function apPressure(occ, color) {
+  var enemy = apOther(color);
+  var out = [];
+  Object.keys(occ).forEach(function(sq) {
+    var p = occ[sq];
+    if (!p || p.color !== color) return;
+    var n = 0, sum = 0;
+    Object.keys(occ).forEach(function(a) {
+      var q = occ[a];
+      if (!q || q.color !== enemy) return;
+      if (!geometricallyAttacks(occ, a, sq)) return;
+      n++;
+      sum += AP_PRESS_VAL[q.type];
+    });
+    if (!n) return;
+    out.push({ sq: sq, label: apLabel(occ, sq), n: n, sum: sum, p: 10 * n / sum });
+  });
+  out.sort(function(a, b) { return b.p - a.p || apVal(occ[b.sq].type) - apVal(occ[a.sq].type); });
+  return out;
 }
 
 function apFmt(x) { return (Math.round(x * 10) / 10).toFixed(1).replace('.', ','); }
 
-function apRiskLines(r) {
-  var lines = [];
-  if (!r) return lines;
-  function add(nome, list, fmt) {
-    if (!list.length) return;
-    lines.push(nome + ': ' + list.slice(0, 2).map(fmt).join('; ') + (list.length > 2 ? ' (+' + (list.length - 2) + ')' : ''));
-  }
-  add('Forchetta', r.forchetta, function(e) { return e.san + ' su ' + e.targets.join(' e '); });
-  add('Attacco doppio', r.doppio, function(e) { return e.san + ' su ' + e.targets.join(' e '); });
-  add('Scoperta', r.scoperta, function(e) { return e.san + ' scopre ' + e.targets.join(', '); });
-  return lines;
+/* ---- motore dedicato ---- */
+function apEngineSettings() {
+  var depth = Math.max(12, hintEngineSettings().depth);
+  var tv = !!window.__scacchiTv;
+  return { depth: depth, movetime: tv ? 2500 : 4000 };
 }
 
-function analisiPotenziataNode(data) {
+function apEnsureEngine() {
+  if (apStockfish || !stockfishWorkerUrl) return !!apStockfish;
+  try {
+    apStockfish = new Worker(stockfishWorkerUrl);
+    apStockfish.onmessage = function(e) { apOnLine(String(e.data || '').trim()); };
+    apStockfish.onerror = function(err) { console.error('Analisi worker error:', err); };
+    apStockfish.postMessage('uci');
+    apStockfish.postMessage('setoption name MultiPV value ' + AP_MULTIPV);
+    apStockfish.postMessage('setoption name Skill Level value 20');
+    apStockfish.postMessage('isready');
+  } catch (e) {
+    apStockfish = null;
+    console.error('Analisi Stockfish non avviato:', e);
+  }
+  return !!apStockfish;
+}
+
+function apStartPhase(fen, phase) {
+  var s = apEngineSettings();
+  var posFen = phase === 'A' ? fen : apNullFen(fen);
+  apJob = { fen: fen, phase: phase, id: ++apJobId, lines: {}, t0: Date.now(), depth: 0, posFen: posFen };
+  apStockfish.postMessage('position fen ' + posFen);
+  apStockfish.postMessage('go depth ' + s.depth + ' movetime ' + s.movetime);
+}
+
+function apKick() {
+  if (!showAnalisiPotenziata || !apWanted) return;
+  if (!apEnsureEngine() || !apReady) return;
+  if (apJob) {
+    if (apJob.fen !== apWanted && !apStopping) {
+      apStopping = true;
+      try { apStockfish.postMessage('stop'); } catch (e) {}
+    }
+    return;
+  }
+  if (apCache[apWanted]) return;
+  var part = apPartial[apWanted] || {};
+  if (!part.A) { apStartPhase(apWanted, 'A'); return; }
+  if (!part.B) {
+    var inCheck = false;
+    try { inCheck = new Chess(apWanted).in_check(); } catch (e2) { inCheck = true; }
+    if (inCheck) { part.B = { skipped: true }; apPartial[apWanted] = part; apFinish(apWanted); return; }
+    apStartPhase(apWanted, 'B');
+  }
+}
+
+function apParseInfo(line) {
+  if (!apJob || line.indexOf(' pv ') === -1) return;
+  var mpv = line.match(/ multipv (\d+)/);
+  var k = mpv ? parseInt(mpv[1], 10) : 1;
+  var d = line.match(/ depth (\d+)/);
+  var cp = line.match(/score cp (-?\d+)/);
+  var mt = line.match(/score mate (-?\d+)/);
+  var pv = line.split(' pv ')[1].trim().split(/\s+/);
+  var score = mt ? (parseInt(mt[1], 10) > 0 ? 100000 : -100000) : (cp ? parseInt(cp[1], 10) : 0);
+  apJob.lines[k] = { depth: d ? parseInt(d[1], 10) : 0, cp: score, mate: mt ? parseInt(mt[1], 10) : 0, pv: pv };
+  if (k === 1 && d) apJob.depth = parseInt(d[1], 10);
+}
+
+function apOnLine(line) {
+  if (line.indexOf('readyok') !== -1) { apReady = true; apKick(); return; }
+  if (line.indexOf('info') === 0) { apParseInfo(line); return; }
+  if (line.indexOf('bestmove') !== 0 || !apJob) return;
+  var job = apJob;
+  apJob = null;
+  var stale = apStopping || job.fen !== apWanted;
+  apStopping = false;
+  if (!stale) {
+    var part = apPartial[job.fen] || {};
+    part[job.phase] = { lines: job.lines, ms: Date.now() - job.t0, depth: job.depth, posFen: job.posFen };
+    apPartial[job.fen] = part;
+    if (part.A && part.B) apFinish(job.fen);
+    else paintAnalisiPotenziata();
+  }
+  apKick();
+}
+
+function apFinish(fen) {
+  var part = apPartial[fen];
+  delete apPartial[fen];
+  var data = apBuild(fen, part);
+  apCache[fen] = data;
+  apCacheKeys.push(fen);
+  if (apCacheKeys.length > 60) delete apCache[apCacheKeys.shift()];
+  paintAnalisiPotenziata();
+}
+
+function apLinesOf(phase) {
+  return Object.keys(phase.lines || {}).sort().map(function(k) { return phase.lines[k]; });
+}
+
+/* Dati per il pannello, da risultati Stockfish A e B. */
+function apBuild(fen, part) {
+  var ch = new Chess(fen);
+  var mover = ch.turn();
+  var other = apOther(mover);
+  var occ = boardOccupancy(ch);
+  var data = { fen: fen, mover: mover, sec: {}, pressure: { w: apPressure(occ, 'w'), b: apPressure(occ, 'b') },
+    danger: {}, ms: 0, depth: 0, inCheck: !!(part.B && part.B.skipped) };
+  data.sec[mover] = { items: [], note: '' };
+  data.sec[other] = { items: [], note: '' };
+  var A = part.A, B = part.B;
+  data.ms = (A ? A.ms : 0) + (B && !B.skipped ? B.ms : 0);
+  data.depth = Math.max(A ? A.depth : 0, B && !B.skipped ? B.depth : 0);
+  var linesA = A ? apLinesOf(A) : [];
+  var bestA = linesA[0] ? linesA[0].cp : null;
+  function push(color, it) {
+    var list = data.sec[color].items;
+    var keyId = it.key ? it.key.origin : 'mate';
+    if (list.some(function(x) { return x.keyId === keyId; })) return;
+    it.keyId = keyId;
+    list.push(it);
+    if (it.key && occ[it.key.origin] && occ[it.key.origin].color === color) data.danger[it.key.origin] = color;
+  }
+  // A: minacce di chi muove contro l'altro (tutte le linee)
+  linesA.forEach(function(l, idx) {
+    var r = apAnalyzeLine(fen, l.pv, mover, l.cp, l.mate);
+    if (r) { r.src = 'A'; r.rank = idx; push(other, r); }
+  });
+  // B: minacce dell'avversario se chi muove non reagisce
+  if (B && !B.skipped) {
+    var linesB = apLinesOf(B);
+    linesB.forEach(function(l, idx) {
+      var r = apAnalyzeLine(B.posFen, l.pv, other, l.cp, l.mate);
+      if (r) { r.src = 'B'; r.rank = idx; push(mover, r); }
+    });
+    if (linesB[0] && bestA != null) {
+      var drop = Math.max(-10000, Math.min(10000, bestA)) - Math.max(-10000, Math.min(10000, -linesB[0].cp)); // quanto perde chi muove se "passa"
+      data.sec[mover].note = 'Valutazione per il ' + (mover === 'w' ? 'Bianco' : 'Nero') + ': ' +
+        apScoreTxt(bestA) + (drop >= 150 ? '; se non reagisce scende a ' + apScoreTxt(-linesB[0].cp) : '; stabile anche se non reagisce');
+    }
+  }
+  // A: pericoli per chi muove anche giocando la linea migliore
+  if (linesA[0]) {
+    try {
+      var c2 = new Chess(fen);
+      var u = linesA[0].pv[0];
+      var fm = c2.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u.length > 4 ? u.charAt(4) : undefined });
+      var own = fm ? apAnalyzeLine(c2.fen(), linesA[0].pv.slice(1), other, -linesA[0].cp, -linesA[0].mate) : null;
+      // linea migliore di chi muove: è un pericolo solo se la valutazione lo conferma
+      // (non un sacrificio voluto): eval reale <= vantaggio materiale - 0,5 x perdita
+      var matAdv = (apMaterial(occ, mover) - apMaterial(occ, other)) * 100;
+      if (own && (own.mateIn || linesA[0].cp <= matAdv - 50 * own.net)) { own.forced = apSanIt(fm.san); own.src = 'A0'; push(mover, own); }
+    } catch (e) {}
+  }
+  [mover, other].forEach(function(c) {
+    data.sec[c].items.sort(function(a, b) {
+      if (!!b.mateIn !== !!a.mateIn) return b.mateIn ? 1 : -1;
+      return (b.net || 0) - (a.net || 0) || ((a.key ? a.key.n : 9) - (b.key ? b.key.n : 9));
+    });
+  });
+  return data;
+}
+
+function apItemText(it) {
+  var parts = [];
+  var pre = it.forced ? 'Anche con ' + it.forced + ': ' : '';
+  if (it.mateIn && !it.key) return pre + 'Matto in ' + it.mateIn + '. Linea: ' + it.line;
+  var k = it.key;
+  var head = (it.mateIn ? 'Matto in ' + it.mateIn + ', prima ' : '') + apNomeLabel(k.type, k.origin) + ' perso ' + apMosseTxt(k.n) + ' (−' + it.net + ')';
+  if (it.motif) parts.push(it.motif.kind + (it.motif.n > 1 ? ' ' + apMosseTxt(it.motif.n) : '') + ' con ' + it.motif.san + ' su ' + it.motif.txt);
+  it.pins.forEach(function(p) { parts.push(p); });
+  it.tags.forEach(function(t) { parts.push(t); });
+  return pre + head + (parts.length ? ': ' + parts.join('; ') : '') + '. Linea: ' + it.line;
+}
+
+function analisiPotenziataNode(data, busy) {
   var box = document.createElement('div');
   var title = document.createElement('div');
   title.className = 'analisi-titolo';
   title.textContent = 'Analisi potenziata';
   box.appendChild(title);
+  if (!data) {
+    var w = document.createElement('div');
+    w.className = 'analisi-riga analisi-busy';
+    w.textContent = busy || 'Analisi in corso…';
+    box.appendChild(w);
+    return box;
+  }
+  var meta = document.createElement('div');
+  meta.className = 'analisi-meta';
+  meta.textContent = 'Stockfish d' + data.depth + ', ' + AP_MULTIPV + ' linee, ' + apFmt(data.ms / 1000) + ' s';
+  box.appendChild(meta);
   var nomi = { w: 'Bianco', b: 'Nero' };
-  [data.mover, data.mover === 'w' ? 'b' : 'w'].forEach(function(color) {
+  [data.mover, apOther(data.mover)].forEach(function(color) {
     var sec = document.createElement('div');
     sec.className = 'analisi-sez analisi-' + (color === data.mover ? 'mover' : 'other');
     var h = document.createElement('div');
     h.className = 'analisi-h';
-    h.textContent = 'Rischi per il ' + nomi[color] + (color === data.mover ? ' (se non reagisce)' : ' (mosse del ' + nomi[data.mover] + ' ora)');
+    h.textContent = 'Pericoli per il ' + nomi[color] + (color === data.mover ? ' (se non reagisce)' : ' (mosse del ' + nomi[data.mover] + ' ora)');
     sec.appendChild(h);
-    var lines;
-    if (color === data.mover && data.risks[color] === null) lines = ['Sotto scacco: prima para lo scacco.'];
-    else {
-      lines = apRiskLines(data.risks[color]);
-      if (!lines.length) lines = ['Nessuna forchetta, attacco doppio o scoperta.'];
-    }
-    var pr = data.pressure[color].slice(0, 3);
-    if (pr.length) {
-      lines.push('Pressione: ' + pr.map(function(x) {
-        return x.label + ' ' + apFmt(x.p) + ' (' + x.n + '×10/' + x.sum + ')';
+    var lines = [];
+    if (color === data.mover && data.inCheck) lines.push('Sotto scacco: prima para lo scacco.');
+    data.sec[color].items.slice(0, 3).forEach(function(it) { lines.push('⚠ ' + apItemText(it)); });
+    if (!data.sec[color].items.length && !(color === data.mover && data.inCheck)) lines.push('Stockfish non vede perdite di materiale.');
+    if (data.sec[color].note) lines.push(data.sec[color].note);
+    var pr = data.pressure[color];
+    var hot = pr.filter(function(x) { return data.danger[x.sq] === color; });
+    var rest = pr.filter(function(x) { return data.danger[x.sq] !== color; });
+    var shown = hot.concat(rest).slice(0, 3);
+    if (shown.length) {
+      lines.push('Pressione: ' + shown.map(function(x) {
+        return (data.danger[x.sq] === color ? '‼ ' : '') + x.label + ' ' + apFmt(x.p) + ' (' + x.n + '×10/' + x.sum + ')';
       }).join('; '));
     }
     lines.forEach(function(t) {
       var d = document.createElement('div');
-      d.className = 'analisi-riga';
+      d.className = 'analisi-riga' + (t.charAt(0) === '⚠' ? ' analisi-pericolo' : '');
       d.textContent = t;
       sec.appendChild(d);
     });
@@ -4867,28 +5154,41 @@ function analisiPotenziataNode(data) {
 
 function paintAnalisiPotenziata() {
   var $sq = $('#myBoard .square-55d63');
-  $sq.removeClass('hl-rischio-mover hl-rischio-other hl-pressione-w hl-pressione-b').removeAttr('data-pressione');
-  var data = null;
+  $sq.removeClass('hl-rischio-mover hl-rischio-other hl-pressione-w hl-pressione-b hl-pressione-pericolo').removeAttr('data-pressione');
+  var fen = '';
   if (showAnalisiPotenziata && !isSetupMode) {
-    try { data = computeAnalisiPotenziata(viewChess().fen()); } catch (e) { data = null; console.warn('analisi potenziata:', e); }
+    try { fen = viewChess().fen(); } catch (e) { fen = ''; }
+  }
+  var data = fen ? apCache[fen] || null : null;
+  var busy = '';
+  if (fen && !data) {
+    apWanted = fen;
+    if (!stockfishWorkerUrl) busy = 'Attendo Stockfish…';
+    else {
+      var part = apPartial[fen] || {};
+      busy = part.A ? 'Analisi in corso… (minacce dell\'avversario)' : 'Analisi in corso…';
+    }
+    apKick();
+  } else if (!fen) {
+    apWanted = '';
+    if (apJob && apStockfish && !apStopping) { apStopping = true; try { apStockfish.postMessage('stop'); } catch (e2) {} }
   }
   ['analisiNota', 'analisiNotaRight'].forEach(function(id) {
     var el = document.getElementById(id);
     if (!el) return;
     el.textContent = '';
-    if (!data) { el.hidden = true; return; }
+    if (!fen) { el.hidden = true; return; }
     el.hidden = false;
-    el.appendChild(analisiPotenziataNode(data));
+    el.appendChild(analisiPotenziataNode(data, busy));
   });
   if (!data) return;
-  var other = data.mover === 'w' ? 'b' : 'w';
-  if (data.risks[data.mover]) {
-    Object.keys(data.risks[data.mover].squares).forEach(function(s) { $('#myBoard .square-' + s).addClass('hl-rischio-mover'); });
-  }
-  Object.keys(data.risks[other].squares).forEach(function(s) { $('#myBoard .square-' + s).addClass('hl-rischio-other'); });
+  Object.keys(data.danger).forEach(function(s) {
+    $('#myBoard .square-' + s).addClass(data.danger[s] === data.mover ? 'hl-rischio-mover' : 'hl-rischio-other');
+  });
   ['w', 'b'].forEach(function(c) {
     data.pressure[c].forEach(function(x) {
-      $('#myBoard .square-' + x.sq).addClass('hl-pressione-' + c).attr('data-pressione', apFmt(x.p));
+      var $s = $('#myBoard .square-' + x.sq).addClass('hl-pressione-' + c).attr('data-pressione', apFmt(x.p));
+      if (data.danger[x.sq] === c) $s.addClass('hl-pressione-pericolo');
     });
   });
 }
@@ -5542,6 +5842,7 @@ function initStockfish() {
     .then(function(script) {
       var blob = new Blob([script], {type: 'application/javascript'});
       var url = URL.createObjectURL(blob);
+      stockfishWorkerUrl = url;
       stockfish = new Worker(url);
       stockfish.onmessage = function(e) {
         onStockfishLine(String(e.data || '').trim());
@@ -5562,6 +5863,7 @@ function initStockfish() {
         hintStockfishReady = false;
         console.error('Hint Stockfish non avviato:', hintErr);
       }
+      if (showAnalisiPotenziata) paintAnalisiPotenziata();
     })
     .catch(function(err) { updateStatus('Errore caricamento Stockfish', 'danger'); });
 }
